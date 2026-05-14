@@ -1,0 +1,351 @@
+================================================================================
+LUXUS COLLECTION — SESSION SUMMARY
+Date: 2026-05-14
+================================================================================
+
+TECHNICAL PROGRESS THIS SESSION
+--------------------------------------------------------------------------------
+
+1. ADMIN DASHBOARD — LOGIN FIX
+   - Root cause: `backendUrl` was baked into the admin bundle using the wrong
+     env var (ADMIN_CORS = "http://localhost"), causing "Failed to fetch" on login.
+   - Fix: Added dedicated MEDUSA_BACKEND_URL=https://api.luxus-collection.com to
+     the Dockerfile build env and updated medusa-config.ts to use it.
+   - Status: Admin dashboard login working at api.luxus-collection.com/app
+
+2. INVENTORY MANAGEMENT MODULE — NEW FIELDS
+   - Added item_cost (bigNumber) — tracks purchase cost for non-consignment items
+   - Added is_master_backroom (boolean) — hidden from store AND from VPI display
+   - Added is_backroom (boolean) — actively shown in VPI/backroom area
+   - Added consignor_customer_id (text) — links consignor to a Medusa customer
+   - Migrations written and applied; snapshot preserved in source tree
+   - All fields are admin-only; never exposed via store API routes
+
+3. ATTRIBUTE TYPES SEEDED
+   Seeded 6 filterable attribute types with initial values:
+   - Brand: Nighthawk Custom, Cabot Guns, Korth
+   - Caliber: .45 ACP, 9mm, .38 Super, 10mm, .40 S&W, .357 Magnum, .22 LR
+   - Action: Single Action, Double Action, Double/Single Action
+   - Barrel Length: 3", 3.5", 4.25", 5", 5.5", 6"
+   - Frame Color: Black, Silver, Two-Tone, Bronze, Custom
+   - Magazine Capacity: 7, 8, 9, 10, 14, 15
+
+4. API ROUTES — ALL FOUR CUSTOM MODULES
+   Admin routes (JWT-protected):
+   - GET/POST  /admin/product-attributes
+   - GET/PUT/DELETE /admin/product-attributes/[id]
+   - POST      /admin/product-attributes/[id]/values
+   - DELETE    /admin/product-attributes/[id]/values/[value_id]
+   - GET/POST/DELETE /admin/products/[id]/attributes
+   - GET/POST/PUT /admin/products/[id]/details
+   - GET/POST/PUT /admin/products/[id]/specs
+   - GET/POST/PUT /admin/products/[id]/inventory-info
+
+   Store routes (public):
+   - GET /store/product-attributes
+   - GET /store/products/[id]/attributes
+   - GET /store/products/[id]/details
+   - GET /store/products/[id]/specs
+   (inventory-info is explicitly excluded from all store routes)
+
+5. ADMIN UI WIDGETS (product edit page)
+   - Product Details widget (zone: product.details.side.before)
+     Fields: short_description, serial_number, optics_ready, featured_image_url,
+             seo_meta_title, seo_meta_description
+   - Product Specs widget (zone: product.details.side.after)
+     Fields: overall_length, weight, frame_material, grip_material,
+             sight_type, finish_type
+   - Inventory & Pricing widget (zone: product.details.side.after)
+     Fields: item_cost, is_consignment + all consignor fields,
+             imported_by_luxus, importer fields, is_master_backroom, is_backroom
+   - Product Attributes widget (zone: product.details.after)
+     Checkbox grid grouped by attribute type; scrollable per column;
+     save/unsave per product
+
+6. ADMIN UI PAGES (custom routes)
+   - Product Attributes management page (/app/product-attributes)
+     Cards per attribute type; add/delete values inline; create new types
+   - Create Product page (/app/products/create)
+     Single-form creation with ALL fields: Medusa native (title, SKU, price,
+     status, description) + Product Details + Product Specs + Inventory &
+     Pricing + Product Attributes checkboxes. Creates everything in one save.
+
+7. PRODUCT IMPORT API
+   Endpoint: POST /import/products
+   Auth: X-Api-Key header (LUXUS_IMPORT_API_KEY env var)
+   - Accepts single product object or array for bulk import
+   - Creates Medusa product + default variant with optional pricing
+   - Creates product_details, product_specs, inventory_info records in parallel
+   - Resolves attribute values by type slug + value text (case-insensitive)
+   - Unknown slugs/values reported as warnings, don't fail the import
+   - Per-item error handling for bulk imports (some can fail, others succeed)
+   - Returns: { created, failed, results: [{ title, product_id, success, error?, warnings? }] }
+
+   Example payload:
+   {
+     "title": "Nighthawk Custom Agent",
+     "sku": "NHC-AGENT-01",
+     "price": 3499.00,
+     "status": "draft",
+     "details": { "serial_number": "NHC-12345", "optics_ready": true },
+     "specs": { "overall_length": "8.75\"", "weight": "38 oz" },
+     "inventory": { "item_cost": 2800, "is_backroom": false },
+     "attributes": { "brand": "Nighthawk Custom", "caliber": ".45 ACP" }
+   }
+
+8. BUG FIXES
+   - product-attributes GET routes: replaced query.graph (custom entities not in
+     remote query registry) with direct module service calls
+   - products/[id]/attributes: field name was "attribute_value.*" (wrong),
+     corrected to "attribute_values.*" (plural required for isList:true links)
+   - inventory-info route: createInventoryInfoes → createInventoryInfos
+     (MedusaService pluralization is "s" not "es" for InventoryInfo)
+   - product-attributes link: changed from one-sided isList:true (one-to-many,
+     each attribute value could only belong to one product) to both-sided
+     isList:true (true many-to-many, multiple products can share same values)
+   - docker-compose.yml: added LUXUS_IMPORT_API_KEY to medusa environment block
+
+================================================================================
+
+NEW FEATURES ADDED TO SCOPE (not in original SOW)
+--------------------------------------------------------------------------------
+
+1. BACKROOM / VPI SYSTEM
+   Two-flag approach for inventory visibility control:
+   - is_master_backroom: item exists in backroom pool but NOT shown in VPI display
+   - is_backroom: item is actively displayed in VPI area
+   This allows on-the-fly curation of what VPI clients see without removing items
+   from the backroom pool. The storefront VPI area will need password protection.
+   Admin-only fields; not in original module specification.
+
+2. PRODUCT IMPORT API
+   The SOW referenced a bot/AI agent for product management but did not specify
+   a dedicated import endpoint. This was built as a standalone authenticated API
+   separate from the Medusa admin routes, using a static API key rather than
+   JWT auth, making it suitable for programmatic/bot use without token refresh.
+
+3. CONSIGNMENT PORTAL FOUNDATION
+   Added consignor_customer_id field to link consignors to Medusa customer
+   accounts. This is the data layer needed for a future consignor portal where
+   consignors can log in and view their items. The portal UI and auth flow are
+   not yet built.
+
+4. ATTRIBUTE MANAGEMENT UI
+   The SOW assumed attributes would be managed via direct DB/API. A full
+   attribute management page was built in the admin for non-technical management
+   of attribute types and values without needing API access.
+
+5. UNIFIED PRODUCT CREATE PAGE
+   The SOW did not specify admin customization beyond standard Medusa. A fully
+   custom product creation page was built that combines Medusa native fields
+   with all four custom modules in a single form, eliminating the two-step
+   create-then-edit workflow that the standard Medusa wizard would require.
+
+================================================================================
+
+REMAINING TASKS — PHASE 1 (Core Commerce Launch)
+--------------------------------------------------------------------------------
+
+NEXT.JS STOREFRONT (largest remaining item)
+  [ ] Project scaffolding on Vercel (Next.js 15+, Tailwind CSS)
+  [ ] Homepage
+  [ ] Product listing page (PLP) with faceted filtering via Meilisearch
+  [ ] Product detail page (PDP) — images, specs, attributes, inquiry form
+  [ ] Cart and checkout flow
+  [ ] Account pages (register, login, order history)
+  [ ] Mobile-first responsive design
+  [ ] PWA setup (manifest, service worker, offline support)
+  [ ] Core Web Vitals / performance budget enforcement
+
+PAYMENTS
+  [ ] Select and integrate firearms-friendly processor
+      (candidates: EPIC, TacticalPay, PaymentCloud)
+  [ ] Wire transfer / check manual payment flow with reservation logic
+  [ ] Apple Pay / Google Pay if supported by chosen processor
+
+FFL COMPLIANCE
+  [ ] FastBound account setup (~$39-99/mo)
+  [ ] A&D book API sync (acquisition/disposition logging)
+  [ ] FFL dealer lookup integration at checkout
+  [ ] FFL dealer selection step in checkout flow
+  [ ] State restriction engine (configurable rules, checkout enforcement)
+
+EMAIL — TRANSACTIONAL
+  [ ] Resend account setup + domain verification
+  [ ] React Email templates:
+      - Order confirmation
+      - Shipping notification
+      - Payment received
+      - Inquiry received
+      - Account creation
+
+VPI / BACKROOM STOREFRONT AREA
+  [ ] Password-protected VPI route on storefront
+  [ ] Filter products by is_backroom flag via store API
+  [ ] Simple access flow (password or invite link)
+
+PRODUCT INQUIRY FORMS
+  [ ] Per-product inquiry form on PDP
+  [ ] Context injection (product title, SKU, price)
+  [ ] Internal notification email to Luxus team
+  [ ] Customer confirmation email
+
+MEILISEARCH — STOREFRONT INTEGRATION
+  [ ] Wire Meilisearch to storefront search UI
+  [ ] Faceted filtering: brand, caliber, action, barrel length, price range
+  [ ] Instant search component
+
+CONSIGNMENT PORTAL (foundation exists, UI not built)
+  [ ] Customer-facing portal at luxus-collection.com/consignment
+      (or consignment.luxus-collection.com)
+  [ ] Auth flow for consignors (Medusa customer account)
+  [ ] Consignor dashboard: list their items, status, consignor cost,
+      suggested price, current listing status
+
+SEO — BASIC
+  [ ] Meta tags on all page types
+  [ ] XML sitemap
+  [ ] robots.txt
+  [ ] JSON-LD Product schema on PDP
+  [ ] Breadcrumb schema
+
+DEPLOYMENT
+  [ ] Next.js storefront deployed on Vercel at luxus-collection.com
+  [ ] Environment config (NEXT_PUBLIC_MEDUSA_BACKEND_URL etc.)
+  [ ] CI/CD pipeline
+
+================================================================================
+
+REMAINING TASKS — PHASE 2 (Content & Marketing)
+--------------------------------------------------------------------------------
+  [ ] Klaviyo account + Medusa plugin setup
+  [ ] Automated email flows (welcome, abandoned cart, post-purchase, back-in-stock)
+  [ ] Newsletter signup forms + double opt-in
+  [ ] Blog content type in Payload CMS + blog pages on Next.js
+  [ ] Manufacturer profile pages (Payload + Next.js)
+  [ ] Internal linking engine (Payload plugin)
+  [ ] Cross-site links with luxuscap.com
+  [ ] Analytics (Plausible or Fathom)
+  [ ] PWA push notifications (back-in-stock, new arrivals, order updates)
+
+================================================================================
+
+REMAINING TASKS — PHASE 3 (AI Integration)
+--------------------------------------------------------------------------------
+  [ ] MCP Server — real implementation (currently health endpoint placeholder)
+      - Product search, product detail, brand info, availability check
+      - Rate limiting, read-only access
+  [ ] llms.txt + llms-full.txt auto-generator (from Medusa + Payload data)
+  [ ] Enhanced JSON-LD schema on all page types
+  [ ] AI crawler optimization (robots.txt, TTFB)
+  [ ] luxuscap.com availability bridge (REST API for real-time badges)
+
+================================================================================
+
+REMAINING TASKS — PHASE 4 (Rich Media)
+--------------------------------------------------------------------------------
+  [ ] Mux account + video upload pipeline
+  [ ] Mux Player on PDP (conditional on product having video)
+  [ ] 3D product viewer (model-viewer component on PDP)
+  [ ] Photogrammetry pipeline setup (Polycam / RealityScan)
+  [ ] First 5-10 products scanned and optimized
+
+================================================================================
+
+INFRASTRUCTURE NOTES
+--------------------------------------------------------------------------------
+Server:       AWS Lightsail 8GB, Ubuntu 24.04
+Backend URL:  https://api.luxus-collection.com (Nginx reverse proxy)
+Admin:        https://api.luxus-collection.com/app
+Medusa:       Port 9000 (Docker, internal)
+Payload CMS:  Port 3000 (Docker, internal)
+MCP Server:   Port 3002 (Docker, internal, placeholder)
+Database:     PostgreSQL 16 — luxus_medusa + luxus_payload
+Redis:        Redis 7
+Search:       Meilisearch 1.11 (running, not yet wired to storefront)
+Git:          github.com/mgraczyk23/luxus-commerce (master branch)
+
+Import API Key: See LUXUS_IMPORT_API_KEY in /home/ubuntu/luxus-commerce/.env
+                Keep this secret — it grants unauthenticated product creation access.
+
+================================================================================
+
+ADDITIONAL WORK COMPLETED AFTER INITIAL SUMMARY
+--------------------------------------------------------------------------------
+
+9. AWS S3 IMAGE STORAGE
+   - Root cause of broken uploads: no file storage module was configured in
+     medusa-config.ts — Medusa 2 requires an explicit file provider.
+   - Installed @medusajs/file-s3 (2.15.1) and wired it to the
+     luxus-collection-media S3 bucket (us-east-1).
+   - Added S3 env vars to .env and docker-compose.yml:
+       S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_FILE_URL
+   - Hit "bucket does not allow ACLs" error on first upload — new S3 buckets
+     disable ACLs by default since 2023. Fixed by changing Object Ownership
+     from "Bucket owner enforced" to "Bucket owner preferred" in AWS console.
+     No code change needed; the existing bucket policy handles public reads.
+   - Images now upload from admin and are stored permanently at:
+     https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/
+   - IAM user: luxus-medusa-s3 with AmazonS3FullAccess
+   - NOTE: IAM credentials were shared in session chat — rotate them in AWS
+     console when possible (IAM → Users → luxus-medusa-s3 → Security credentials)
+
+10. PRODUCT ATTRIBUTES — MULTI/SINGLE-SELECT SUPPORT
+    - Added is_multi_select boolean (default: true) to AttributeType model
+    - Generated and applied migration (Migration20260514213000.ts):
+        ALTER TABLE attribute_type ADD COLUMN is_multi_select boolean NOT NULL DEFAULT true
+    - All existing attribute types defaulted to multi-select (true)
+    - Migration note: db:generate from running container produced a broken
+      full-schema migration; fixed by writing the correct ALTER TABLE migration
+      manually in the host source tree before rebuilding.
+
+    Attribute management page (/app/product-attributes):
+    - "Selection" toggle on the create form — click to switch between
+      Multi-select and Single-select before creating a new type
+    - Each card shows a colored badge (blue = Multi, purple = Single)
+    - Click the badge on any card to toggle it at any time (calls PUT endpoint)
+    - Helper text below the form explains the difference
+
+    Product attributes widget (product edit page):
+    - Multi-select types → Medusa Checkbox components (existing behavior)
+    - Single-select types → native radio buttons; selecting a value
+      automatically deselects any previous selection for that type
+    - Both types show the Multi/Single badge next to the type name
+    - Selected values shown as a summary line under the type heading
+    - Search box appears automatically when a type has more than 6 values
+    - Scroll kicks in after ~10 items (max-h-72 = 288px)
+    - Save button only enables when there are unsaved changes
+
+11. MODEL ATTRIBUTE TYPE
+    - Added "Model" as a 7th attribute type (slug: model, single-select)
+    - Current values: managed via admin at /app/product-attributes
+
+12. PRODUCT IMPORT API DOCUMENTATION
+    - Created docs/product-import-api.md — full reference for programmatic
+      product creation via POST /import/products
+    - Covers: authentication, full payload schema with all fields and types,
+      attribute slug reference table with current valid values, curl examples
+      (minimal, full, consignment, bulk, multi-brand set), Python example
+      with single and bulk import functions, and notable gotchas
+    - File available at: /home/ubuntu/luxus-commerce/docs/product-import-api.md
+
+================================================================================
+INFRASTRUCTURE STATE (end of session)
+--------------------------------------------------------------------------------
+All containers healthy:
+  Medusa:       https://api.luxus-collection.com (port 9000)
+  Admin:        https://api.luxus-collection.com/app
+  Payload CMS:  port 3000
+  MCP Server:   port 3002 (placeholder)
+  PostgreSQL:   luxus_medusa + luxus_payload
+  Redis:        healthy
+  Meilisearch:  healthy
+  Nginx:        80/443
+
+S3 bucket:      luxus-collection-media (us-east-1)
+Git commits:    3ec661c — S3 + multi/single-select attributes + UX improvements
+                87a4a55 — Product import API documentation
+
+================================================================================
+End of Session Summary
+================================================================================
