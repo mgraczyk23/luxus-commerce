@@ -25,9 +25,14 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const service = req.scope.resolve(PRODUCT_ATTRIBUTES_MODULE)
-  const { name, slug, sort_order } = req.body as any
+  const { name, slug, sort_order, is_multi_select } = req.body as any
 
-  const type = await service.createAttributeTypes({ name, slug, sort_order: sort_order ?? 0 })
+  const type = await service.createAttributeTypes({
+    name,
+    slug,
+    sort_order: sort_order ?? 0,
+    is_multi_select: is_multi_select !== false,
+  })
 
   res.status(201).json({ attribute_type: type })
 }

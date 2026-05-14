@@ -14,6 +14,7 @@ type AttributeType = {
   name: string
   slug: string
   sort_order: number
+  is_multi_select: boolean
   values: AttributeValue[]
 }
 
@@ -21,13 +22,16 @@ const AttributeTypeCard = ({
   type,
   onValueAdded,
   onValueDeleted,
+  onTypeUpdated,
 }: {
   type: AttributeType
   onValueAdded: (typeId: string, value: AttributeValue) => void
   onValueDeleted: (typeId: string, valueId: string) => void
+  onTypeUpdated: (typeId: string, updates: Partial<AttributeType>) => void
 }) => {
   const [newValue, setNewValue] = useState("")
   const [adding, setAdding] = useState(false)
+  const [togglingSelect, setTogglingSelect] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const handleAdd = async () => {
@@ -37,10 +41,7 @@ const AttributeTypeCard = ({
     try {
       const { attribute_value } = await adminFetch<{ attribute_value: AttributeValue }>(
         `/admin/product-attributes/${type.id}/values`,
-        {
-          method: "POST",
-          body: JSON.stringify({ value: trimmed, sort_order: type.values.length }),
-        }
+        { method: "POST", body: JSON.stringify({ value: trimmed, sort_order: type.values.length }) }
       )
       onValueAdded(type.id, attribute_value)
       setNewValue("")
@@ -54,17 +55,26 @@ const AttributeTypeCard = ({
 
   const handleDelete = async (valueId: string) => {
     try {
-      await adminFetch(`/admin/product-attributes/${type.id}/values/${valueId}`, {
-        method: "DELETE",
-      })
+      await adminFetch(`/admin/product-attributes/${type.id}/values/${valueId}`, { method: "DELETE" })
       onValueDeleted(type.id, valueId)
     } catch {
       toast.error("Failed to delete value")
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") handleAdd()
+  const handleToggleSelect = async () => {
+    setTogglingSelect(true)
+    try {
+      await adminFetch(`/admin/product-attributes/${type.id}`, {
+        method: "PUT",
+        body: JSON.stringify({ is_multi_select: !type.is_multi_select }),
+      })
+      onTypeUpdated(type.id, { is_multi_select: !type.is_multi_select })
+    } catch {
+      toast.error("Failed to update attribute type")
+    } finally {
+      setTogglingSelect(false)
+    }
   }
 
   return (
@@ -74,7 +84,21 @@ const AttributeTypeCard = ({
           <Text size="small" weight="plus">{type.name}</Text>
           <Text size="xsmall" className="text-ui-fg-muted">{type.slug}</Text>
         </div>
-        <Badge size="2xsmall" color="grey">{type.values.length} values</Badge>
+        <div className="flex items-center gap-2">
+          <Badge size="2xsmall" color="grey">{type.values.length} values</Badge>
+          <button
+            onClick={handleToggleSelect}
+            disabled={togglingSelect}
+            title={`Currently ${type.is_multi_select ? "multi-select" : "single-select"} — click to toggle`}
+            className={`text-xs px-2 py-0.5 rounded-full border transition-colors ${
+              type.is_multi_select
+                ? "border-ui-tag-blue-border bg-ui-tag-blue-bg text-ui-tag-blue-text"
+                : "border-ui-tag-purple-border bg-ui-tag-purple-bg text-ui-tag-purple-text"
+            }`}
+          >
+            {type.is_multi_select ? "Multi" : "Single"}
+          </button>
+        </div>
       </div>
 
       <div className="px-4 py-3 space-y-1.5 max-h-52 overflow-y-auto">
@@ -104,7 +128,7 @@ const AttributeTypeCard = ({
           placeholder="New value…"
           value={newValue}
           onChange={(e) => setNewValue(e.target.value)}
-          onKeyDown={handleKeyDown}
+          onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           className="flex-1"
         />
         <Button size="small" variant="secondary" onClick={handleAdd} isLoading={adding} disabled={!newValue.trim()}>
@@ -120,6 +144,7 @@ const ProductAttributesPage = () => {
   const [loading, setLoading] = useState(true)
   const [newTypeName, setNewTypeName] = useState("")
   const [newTypeSlug, setNewTypeSlug] = useState("")
+  const [newTypeMulti, setNewTypeMulti] = useState(true)
   const [creatingType, setCreatingType] = useState(false)
 
   useEffect(() => {
@@ -143,15 +168,21 @@ const ProductAttributesPage = () => {
     )
   }
 
+  const handleTypeUpdated = (typeId: string, updates: Partial<AttributeType>) => {
+    setTypes((prev) =>
+      prev.map((t) => (t.id === typeId ? { ...t, ...updates } : t))
+    )
+  }
+
+  const slugify = (s: string) =>
+    s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+
   const handleNameChange = (name: string) => {
     setNewTypeName(name)
     if (!newTypeSlug || newTypeSlug === slugify(newTypeName)) {
       setNewTypeSlug(slugify(name))
     }
   }
-
-  const slugify = (s: string) =>
-    s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
 
   const handleCreateType = async () => {
     const name = newTypeName.trim()
@@ -163,12 +194,13 @@ const ProductAttributesPage = () => {
         "/admin/product-attributes",
         {
           method: "POST",
-          body: JSON.stringify({ name, slug, sort_order: types.length }),
+          body: JSON.stringify({ name, slug, sort_order: types.length, is_multi_select: newTypeMulti }),
         }
       )
       setTypes((prev) => [...prev, { ...attribute_type, values: [] }])
       setNewTypeName("")
       setNewTypeSlug("")
+      setNewTypeMulti(true)
       toast.success(`"${name}" attribute type created`)
     } catch {
       toast.error("Failed to create attribute type")
@@ -190,28 +222,51 @@ const ProductAttributesPage = () => {
         <div className="px-6 py-4 border-b border-ui-border-base">
           <Heading level="h2">Add Attribute Type</Heading>
         </div>
-        <div className="flex gap-3 px-6 py-4 items-end">
-          <div className="flex-1">
+        <div className="flex gap-3 px-6 py-4 items-end flex-wrap">
+          <div className="flex-1 min-w-40">
             <Text size="xsmall" weight="plus" className="mb-1.5 block text-ui-fg-subtle">Name</Text>
             <Input
-              placeholder="e.g. Frame Size"
+              placeholder="e.g. Model"
               value={newTypeName}
               onChange={(e) => handleNameChange(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateType()}
             />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-40">
             <Text size="xsmall" weight="plus" className="mb-1.5 block text-ui-fg-subtle">Slug</Text>
             <Input
-              placeholder="e.g. frame-size"
+              placeholder="e.g. model"
               value={newTypeSlug}
               onChange={(e) => setNewTypeSlug(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleCreateType()}
             />
           </div>
+          <div className="flex flex-col gap-1.5">
+            <Text size="xsmall" weight="plus" className="block text-ui-fg-subtle">Selection</Text>
+            <div className="flex items-center gap-2 h-10">
+              <button
+                type="button"
+                onClick={() => setNewTypeMulti(!newTypeMulti)}
+                className={`text-sm px-3 py-1.5 rounded-md border transition-colors ${
+                  newTypeMulti
+                    ? "border-ui-tag-blue-border bg-ui-tag-blue-bg text-ui-tag-blue-text"
+                    : "border-ui-tag-purple-border bg-ui-tag-purple-bg text-ui-tag-purple-text"
+                }`}
+              >
+                {newTypeMulti ? "Multi-select" : "Single-select"}
+              </button>
+            </div>
+          </div>
           <Button onClick={handleCreateType} isLoading={creatingType} disabled={!newTypeName.trim()}>
             Create
           </Button>
+        </div>
+        <div className="px-6 pb-4">
+          <Text size="xsmall" className="text-ui-fg-muted">
+            <strong>Multi-select</strong> — product can have multiple values (e.g. Brand for sets).{" "}
+            <strong>Single-select</strong> — product has exactly one value (e.g. Model, Action type).
+            Click the badge on any card to toggle it later.
+          </Text>
         </div>
       </Container>
 
@@ -225,6 +280,7 @@ const ProductAttributesPage = () => {
               type={type}
               onValueAdded={handleValueAdded}
               onValueDeleted={handleValueDeleted}
+              onTypeUpdated={handleTypeUpdated}
             />
           ))}
         </div>

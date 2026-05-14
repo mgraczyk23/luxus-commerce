@@ -6,6 +6,7 @@ const AttributeType = model.define("attribute_type", {
   name: model.text(),
   slug: model.text(),
   sort_order: model.number().default(0),
+  is_multi_select: model.boolean().default(true),
   values: model.hasMany(() => AttributeValue, {
     mappedBy: "attribute_type",
   }),
