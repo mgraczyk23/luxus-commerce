@@ -88,6 +88,7 @@ services:
       STORE_CORS: ${STORE_CORS}
       ADMIN_CORS: ${ADMIN_CORS}
       AUTH_CORS: ${AUTH_CORS}
+      LUXUS_IMPORT_API_KEY: ${LUXUS_IMPORT_API_KEY}
     ports:
       - '127.0.0.1:9000:9000'
     volumes:

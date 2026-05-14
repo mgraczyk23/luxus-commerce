@@ -7,7 +7,7 @@ RUN npm install --legacy-peer-deps
 COPY . .
 WORKDIR /app/apps/backend
 
-RUN printf 'DATABASE_URL=postgres://dummy:dummy@localhost:5432/dummy\nREDIS_URL=redis://localhost:6379\nJWT_SECRET=buildsecret\nCOOKIE_SECRET=buildsecret\nSTORE_CORS=http://localhost\nADMIN_CORS=http://localhost\nAUTH_CORS=http://localhost\n' > .env
+RUN printf 'DATABASE_URL=postgres://dummy:dummy@localhost:5432/dummy\nREDIS_URL=redis://localhost:6379\nJWT_SECRET=buildsecret\nCOOKIE_SECRET=buildsecret\nSTORE_CORS=http://localhost\nADMIN_CORS=http://localhost\nAUTH_CORS=http://localhost\nMEDUSA_BACKEND_URL=https://api.luxus-collection.com\n' > .env
 
 RUN npm run build
 
