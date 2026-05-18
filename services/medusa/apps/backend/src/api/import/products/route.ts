@@ -15,6 +15,8 @@ type ImportItem = {
   status?: "draft" | "published"
   sku?: string
   price?: number               // USD dollars, e.g. 3499.00
+  thumbnail?: string           // URL of the product thumbnail image
+  images?: string[]            // URLs of additional product gallery images
 
   // Custom modules
   details?: {
@@ -99,6 +101,8 @@ async function importOne(
       handle: item.handle ? slugify(item.handle) : slugify(item.title),
       description: item.description,
       status: item.status ?? "draft",
+      thumbnail: item.thumbnail,
+      images: item.images?.map((url) => ({ url })),
       options: [{ title: "Title", values: ["Default"] }],
     }])
 

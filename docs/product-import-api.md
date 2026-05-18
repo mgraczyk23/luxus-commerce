@@ -40,6 +40,10 @@ All fields are optional except `title`.
 | `status` | `"draft"` \| `"published"` | Listing status. Defaults to `"draft"` |
 | `sku` | string | Stock-keeping unit identifier for the variant |
 | `price` | number | Retail price in USD dollars (e.g. `3499.00`). Omit to create with no price |
+| `thumbnail` | string | URL of the thumbnail image shown on product cards |
+| `images` | string[] | Array of URLs for the product gallery (full-size detail images) |
+
+> **Images must already be hosted.** Pass public URLs — either S3 URLs (`https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/...`) or any other publicly accessible URL. To upload files first and get URLs back, use `POST /admin/uploads` with an admin JWT token (see [Automated Import with Images](#automated-import-with-images) below).
 
 ### `details` Object — Partially storefront visible (see note)
 
@@ -171,6 +175,11 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "status": "published",
     "sku": "NHC-AGENT-01",
     "price": 3499.00,
+    "thumbnail": "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-thumb.jpg",
+    "images": [
+      "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-1.jpg",
+      "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-2.jpg"
+    ],
     "details": {
       "short_description": "Compact Government-size 1911 from Nighthawk Custom.",
       "serial_number": "NHC-12345",
@@ -342,6 +351,127 @@ for item in result["results"]:
 
 ---
 
+## Automated Import with Images
+
+For bulk imports where you have image files on disk, use a two-step script: upload each image to Medusa (which stores it in S3 and returns the URL), then call the import API with the URLs attached.
+
+### Folder structure
+
+```
+import/
+  products.json
+  images/
+    NHC-AGENT-01-thumb.jpg     ← thumbnail (SKU + "-thumb")
+    NHC-AGENT-01-1.jpg         ← gallery image 1 (SKU + "-1")
+    NHC-AGENT-01-2.jpg         ← gallery image 2 (SKU + "-2")
+    CAB-AJ-001-thumb.jpg
+    CAB-AJ-001-1.jpg
+```
+
+### Script
+
+```python
+import requests
+import json
+from pathlib import Path
+
+MEDUSA_URL = "https://api.luxus-collection.com"
+IMPORT_API_KEY = "your-import-api-key"
+ADMIN_EMAIL = "your-admin@email.com"
+ADMIN_PASSWORD = "your-password"
+
+def get_auth_token():
+    r = requests.post(f"{MEDUSA_URL}/auth/user/emailpass", json={
+        "email": ADMIN_EMAIL,
+        "password": ADMIN_PASSWORD,
+    })
+    r.raise_for_status()
+    return r.json()["token"]
+
+def upload_image(token: str, file_path: Path) -> str:
+    with open(file_path, "rb") as f:
+        r = requests.post(
+            f"{MEDUSA_URL}/admin/uploads",
+            headers={"Authorization": f"Bearer {token}"},
+            files={"files": (file_path.name, f, "image/jpeg")},
+        )
+    r.raise_for_status()
+    return r.json()["files"][0]["url"]
+
+def import_products(products: list) -> dict:
+    r = requests.post(
+        f"{MEDUSA_URL}/import/products",
+        headers={
+            "Content-Type": "application/json",
+            "X-Api-Key": IMPORT_API_KEY,
+        },
+        json=products,
+    )
+    r.raise_for_status()
+    return r.json()
+
+token = get_auth_token()
+image_dir = Path("images")
+products = json.loads(Path("products.json").read_text())
+
+for product in products:
+    sku = product.get("sku", "")
+
+    thumb_path = image_dir / f"{sku}-thumb.jpg"
+    if thumb_path.exists():
+        product["thumbnail"] = upload_image(token, thumb_path)
+
+    gallery = []
+    for i in range(1, 20):
+        img_path = image_dir / f"{sku}-{i}.jpg"
+        if not img_path.exists():
+            break
+        gallery.append(upload_image(token, img_path))
+    if gallery:
+        product["images"] = gallery
+
+result = import_products(products)
+print(f"Created: {result['created']}, Failed: {result['failed']}")
+for item in result["results"]:
+    status = "✓" if item["success"] else "✗"
+    detail = item.get("product_id") or item.get("error", "")
+    print(f"  {status} {item['title']} — {detail}")
+```
+
+### `products.json` format
+
+```json
+[
+  {
+    "title": "Nighthawk Custom Agent",
+    "sku": "NHC-AGENT-01",
+    "price": 3499.00,
+    "status": "draft",
+    "attributes": {
+      "brand": "Nighthawk Custom",
+      "caliber": ".45 ACP",
+      "action": "Single Action",
+      "barrel-length": "5\""
+    }
+  },
+  {
+    "title": "Cabot Guns American Joe",
+    "sku": "CAB-AJ-001",
+    "price": 7995.00,
+    "status": "draft",
+    "attributes": {
+      "brand": "Cabot Guns",
+      "caliber": ".45 ACP",
+      "action": "Single Action"
+    }
+  }
+]
+```
+
+Images are matched to products by SKU automatically. Products with no matching image files are imported without images — no error is raised.
+
+---
+
 ## Notes and Gotchas
 
 **Handles must be unique.** If you import a product with the same title twice without specifying a `handle`, the second import may fail with a duplicate handle error. Always set an explicit `handle` for programmatic imports, or ensure titles are unique.
@@ -355,3 +485,5 @@ for item in result["results"]:
 **Inventory fields are admin-only.** The `inventory` block is never returned by any store-facing API route. It is safe to include consignor pricing and cost details without risk of exposure.
 
 **Bulk imports process sequentially.** Items are processed one at a time to avoid duplicate-handle collisions. For large catalogs, expect roughly 1-2 seconds per product.
+
+**Images must be uploaded before import.** The import API accepts URLs only — it does not accept file uploads directly. Use the automated script above or upload images manually via the admin Media tab first.
