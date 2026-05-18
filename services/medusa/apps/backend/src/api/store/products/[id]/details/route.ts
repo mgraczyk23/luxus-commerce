@@ -14,7 +14,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       "product_detail.id",
       "product_detail.short_description",
       "product_detail.optics_ready",
-      "product_detail.featured_image_url",
+      "product_detail.thumbnail_url",
       "product_detail.seo_meta_title",
       "product_detail.seo_meta_description",
     ],

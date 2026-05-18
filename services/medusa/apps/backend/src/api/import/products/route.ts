@@ -21,7 +21,7 @@ type ImportItem = {
     short_description?: string
     serial_number?: string
     optics_ready?: boolean
-    featured_image_url?: string
+    thumbnail_url?: string
     seo_meta_title?: string
     seo_meta_description?: string
   }
@@ -131,7 +131,7 @@ async function importOne(
           short_description: item.details.short_description ?? null,
           serial_number: item.details.serial_number ?? null,
           optics_ready: item.details.optics_ready ?? false,
-          featured_image_url: item.details.featured_image_url ?? null,
+          thumbnail_url: item.details.thumbnail_url ?? null,
           seo_meta_title: item.details.seo_meta_title ?? null,
           seo_meta_description: item.details.seo_meta_description ?? null,
         }).then((detail: any) =>

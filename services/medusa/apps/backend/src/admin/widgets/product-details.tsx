@@ -11,7 +11,7 @@ type ProductDetail = {
   optics_ready: boolean
   seo_meta_title: string | null
   seo_meta_description: string | null
-  featured_image_url: string | null
+  thumbnail_url: string | null
 }
 
 const empty: ProductDetail = {
@@ -20,7 +20,7 @@ const empty: ProductDetail = {
   optics_ready: false,
   seo_meta_title: "",
   seo_meta_description: "",
-  featured_image_url: "",
+  thumbnail_url: "",
 }
 
 const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
@@ -96,13 +96,13 @@ const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
           />
         </div>
         <div>
-          <Label htmlFor="pd-img">Featured Image URL</Label>
+          <Label htmlFor="pd-img">Thumbnail URL</Label>
           <Input
             id="pd-img"
-            value={detail.featured_image_url ?? ""}
-            onChange={(e) => set("featured_image_url", e.target.value)}
+            value={detail.thumbnail_url ?? ""}
+            onChange={(e) => set("thumbnail_url", e.target.value)}
             className="mt-1.5"
-            placeholder="https://…"
+            placeholder="https://… (shown on listing page only)"
           />
         </div>
         <div>

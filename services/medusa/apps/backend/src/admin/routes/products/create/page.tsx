@@ -157,7 +157,7 @@ const ProductCreatePage = () => {
             short_description: shortDesc || null,
             serial_number: serialNumber || null,
             optics_ready: opticsReady,
-            featured_image_url: featuredImage || null,
+            thumbnail_url: featuredImage || null,
             seo_meta_title: seoTitle || null,
             seo_meta_description: seoDesc || null,
           }),
@@ -316,12 +316,12 @@ const ProductCreatePage = () => {
                 checked={opticsReady}
                 onChange={setOpticsReady}
               />
-              <Field label="Featured Image URL" htmlFor="c-img">
+              <Field label="Thumbnail URL" htmlFor="c-img">
                 <Input
                   id="c-img"
                   value={featuredImage}
                   onChange={(e) => setFeaturedImage(e.target.value)}
-                  placeholder="https://…"
+                  placeholder="https://… (listing page only)"
                 />
               </Field>
               <Field label="SEO Meta Title" htmlFor="c-seo-title">

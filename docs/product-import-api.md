@@ -48,7 +48,7 @@ All fields are optional except `title`.
 | `short_description` | string | Brief summary shown on product cards — **public** |
 | `serial_number` | string | Firearm serial number — **admin only, never returned by store API** |
 | `optics_ready` | boolean | Whether the pistol is optics-ready — **public** |
-| `featured_image_url` | string | URL of the primary display image — **public** |
+| `thumbnail_url` | string | Thumbnail shown on listing/search pages only — **not shown on PDP** — **public** |
 | `seo_meta_title` | string | `<title>` tag override for the PDP — **public** |
 | `seo_meta_description` | string | Meta description for the PDP — **public** |
 

@@ -7,7 +7,7 @@ const ProductDetail = model.define("product_detail", {
   optics_ready: model.boolean().default(false),
   seo_meta_title: model.text().nullable(),
   seo_meta_description: model.text().nullable(),
-  featured_image_url: model.text().nullable(),
+  thumbnail_url: model.text().nullable(),
 })
 
 export default ProductDetail
