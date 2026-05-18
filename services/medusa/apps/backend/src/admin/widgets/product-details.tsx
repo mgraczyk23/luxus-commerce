@@ -13,7 +13,6 @@ type ProductDetail = {
   primary_category: string | null
   seo_meta_title: string | null
   seo_meta_description: string | null
-  thumbnail_url: string | null
 }
 
 const empty: ProductDetail = {
@@ -24,7 +23,6 @@ const empty: ProductDetail = {
   primary_category: "",
   seo_meta_title: "",
   seo_meta_description: "",
-  thumbnail_url: "",
 }
 
 const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
@@ -118,16 +116,6 @@ const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
             value={detail.primary_category ?? ""}
             onChange={(e) => set("primary_category", e.target.value)}
             placeholder="e.g. Engraved, Prototype, Limited Edition"
-          />
-        </div>
-        <div>
-          <Label htmlFor="pd-img">Thumbnail URL</Label>
-          <Input
-            id="pd-img"
-            value={detail.thumbnail_url ?? ""}
-            onChange={(e) => set("thumbnail_url", e.target.value)}
-            className="mt-1.5"
-            placeholder="https://… (shown on listing page only)"
           />
         </div>
         <div>

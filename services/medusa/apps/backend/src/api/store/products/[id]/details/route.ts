@@ -16,7 +16,6 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
       "product_detail.optics_ready",
       "product_detail.contact_for_pricing",
       "product_detail.primary_category",
-      "product_detail.thumbnail_url",
       "product_detail.seo_meta_title",
       "product_detail.seo_meta_description",
     ],

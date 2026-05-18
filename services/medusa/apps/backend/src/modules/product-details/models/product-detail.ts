@@ -9,7 +9,6 @@ const ProductDetail = model.define("product_detail", {
   primary_category: model.text().nullable(),
   seo_meta_title: model.text().nullable(),
   seo_meta_description: model.text().nullable(),
-  thumbnail_url: model.text().nullable(),
 })
 
 export default ProductDetail
