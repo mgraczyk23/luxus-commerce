@@ -41,16 +41,18 @@ All fields are optional except `title`.
 | `sku` | string | Stock-keeping unit identifier for the variant |
 | `price` | number | Retail price in USD dollars (e.g. `3499.00`). Omit to create with no price |
 
-### `details` Object — Storefront visible
+### `details` Object — Partially storefront visible (see note)
 
 | Field | Type | Description |
 |---|---|---|
-| `short_description` | string | Brief summary shown on product cards |
-| `serial_number` | string | Firearm serial number |
-| `optics_ready` | boolean | Whether the pistol is optics-ready |
-| `featured_image_url` | string | URL of the primary display image |
-| `seo_meta_title` | string | `<title>` tag override for the PDP |
-| `seo_meta_description` | string | Meta description for the PDP |
+| `short_description` | string | Brief summary shown on product cards — **public** |
+| `serial_number` | string | Firearm serial number — **admin only, never returned by store API** |
+| `optics_ready` | boolean | Whether the pistol is optics-ready — **public** |
+| `featured_image_url` | string | URL of the primary display image — **public** |
+| `seo_meta_title` | string | `<title>` tag override for the PDP — **public** |
+| `seo_meta_description` | string | Meta description for the PDP — **public** |
+
+> **Serial number privacy:** `serial_number` is stored server-side and returned only by admin API routes. The store endpoint (`GET /store/products/[id]/details`) explicitly excludes it so it can never be read by the storefront or any public client.
 
 ### `specs` Object — Storefront visible
 

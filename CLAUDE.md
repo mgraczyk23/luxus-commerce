@@ -66,8 +66,9 @@ All four modules have data models, services, module definitions, link definition
 - Linked to Product as many-to-many (isList: true)
 - Attribute types to seed: Brand, Caliber, Action, Barrel Length, Frame Color, Magazine Capacity
 
-### product_details (one-to-one with Product, storefront visible)
-- short_description, serial_number, optics_ready (boolean), seo_meta_title, seo_meta_description, featured_image_url
+### product_details (one-to-one with Product, partially storefront visible)
+- Public fields: short_description, optics_ready (boolean), seo_meta_title, seo_meta_description, featured_image_url
+- Admin only: serial_number — NEVER expose via store routes (competitor cost tracing risk)
 
 ### product_specs (one-to-one with Product, storefront visible, not filterable)
 - overall_length, weight, frame_material, grip_material, sight_type, finish_type
