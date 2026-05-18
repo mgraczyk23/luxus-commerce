@@ -448,18 +448,18 @@ const ProductCreatePage = () => {
             </div>
 
             <div className="flex flex-col gap-4 px-4 py-4">
-              <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wide">Backroom / VPI</Text>
+              <Text size="xsmall" weight="plus" className="text-ui-fg-muted uppercase tracking-wide">Backroom / VIP</Text>
               <ToggleRow
                 id="c-master-backroom"
                 label="Master Backroom"
-                subtitle="Hidden from main store, not shown in VPI"
+                subtitle="Hidden from main store, not shown in VIP"
                 checked={isMasterBackroom}
                 onChange={setIsMasterBackroom}
               />
               <ToggleRow
                 id="c-backroom"
-                label="Backroom / VPI"
-                subtitle="Actively displayed in the VPI area"
+                label="Backroom / VIP"
+                subtitle="Actively displayed in the VIP area"
                 checked={isBackroom}
                 onChange={setIsBackroom}
               />

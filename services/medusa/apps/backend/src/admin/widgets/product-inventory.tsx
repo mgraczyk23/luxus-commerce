@@ -231,12 +231,12 @@ const ProductInventoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
       </div>
 
       <div className="flex flex-col gap-4 px-6 py-4">
-        <SectionLabel>Backroom / VPI</SectionLabel>
+        <SectionLabel>Backroom / VIP</SectionLabel>
         <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-3 py-2">
           <div>
             <Label htmlFor="inv-master-backroom">Master Backroom</Label>
             <Text size="xsmall" className="text-ui-fg-muted">
-              Hidden from main store, not shown in VPI
+              Hidden from main store, not shown in VIP
             </Text>
           </div>
           <Switch
@@ -247,9 +247,9 @@ const ProductInventoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         </div>
         <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-3 py-2">
           <div>
-            <Label htmlFor="inv-backroom">Backroom / VPI</Label>
+            <Label htmlFor="inv-backroom">Backroom / VIP</Label>
             <Text size="xsmall" className="text-ui-fg-muted">
-              Actively displayed in the VPI area
+              Actively displayed in the VIP area
             </Text>
           </div>
           <Switch

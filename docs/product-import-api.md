@@ -79,8 +79,8 @@ All fields are optional except `title`.
 | `importer_name` | string | Name of the importing entity |
 | `importer_mark` | string | Importer's mark stamped on the firearm |
 | `importer_mark_location` | string | Location of the importer's mark |
-| `is_master_backroom` | boolean | In backroom pool but hidden from VPI display |
-| `is_backroom` | boolean | Actively shown in the VPI/backroom area |
+| `is_master_backroom` | boolean | In backroom pool but hidden from VIP display |
+| `is_backroom` | boolean | Actively shown in the VIP/backroom area |
 
 ### `attributes` Object — Filterable product attributes
 

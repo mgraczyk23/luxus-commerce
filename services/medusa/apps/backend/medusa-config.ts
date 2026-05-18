@@ -49,5 +49,8 @@ export default defineConfig({
     {
       resolve: "./src/modules/inventory-management",
     },
+    {
+      resolve: "./src/modules/auction",
+    },
   ],
 })

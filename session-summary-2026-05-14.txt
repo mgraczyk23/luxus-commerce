@@ -15,8 +15,8 @@ TECHNICAL PROGRESS THIS SESSION
 
 2. INVENTORY MANAGEMENT MODULE — NEW FIELDS
    - Added item_cost (bigNumber) — tracks purchase cost for non-consignment items
-   - Added is_master_backroom (boolean) — hidden from store AND from VPI display
-   - Added is_backroom (boolean) — actively shown in VPI/backroom area
+   - Added is_master_backroom (boolean) — hidden from store AND from VIP display
+   - Added is_backroom (boolean) — actively shown in VIP/backroom area
    - Added consignor_customer_id (text) — links consignor to a Medusa customer
    - Migrations written and applied; snapshot preserved in source tree
    - All fields are admin-only; never exposed via store API routes
@@ -110,12 +110,12 @@ TECHNICAL PROGRESS THIS SESSION
 NEW FEATURES ADDED TO SCOPE (not in original SOW)
 --------------------------------------------------------------------------------
 
-1. BACKROOM / VPI SYSTEM
+1. BACKROOM / VIP SYSTEM
    Two-flag approach for inventory visibility control:
-   - is_master_backroom: item exists in backroom pool but NOT shown in VPI display
-   - is_backroom: item is actively displayed in VPI area
-   This allows on-the-fly curation of what VPI clients see without removing items
-   from the backroom pool. The storefront VPI area will need password protection.
+   - is_master_backroom: item exists in backroom pool but NOT shown in VIP display
+   - is_backroom: item is actively displayed in VIP area
+   This allows on-the-fly curation of what VIP clients see without removing items
+   from the backroom pool. The storefront VIP area will need password protection.
    Admin-only fields; not in original module specification.
 
 2. PRODUCT IMPORT API
@@ -179,8 +179,8 @@ EMAIL — TRANSACTIONAL
       - Inquiry received
       - Account creation
 
-VPI / BACKROOM STOREFRONT AREA
-  [ ] Password-protected VPI route on storefront
+VIP / BACKROOM STOREFRONT AREA
+  [ ] Password-protected VIP route on storefront
   [ ] Filter products by is_backroom flag via store API
   [ ] Simple access flow (password or invite link)
 
