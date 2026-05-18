@@ -66,6 +66,8 @@ const ProductCreatePage = () => {
   const [shortDesc, setShortDesc]           = useState("")
   const [serialNumber, setSerialNumber]     = useState("")
   const [opticsReady, setOpticsReady]       = useState(false)
+  const [contactForPricing, setContactForPricing] = useState(false)
+  const [primaryCategory, setPrimaryCategory] = useState("")
   const [featuredImage, setFeaturedImage]   = useState("")
   const [seoTitle, setSeoTitle]             = useState("")
   const [seoDesc, setSeoDesc]               = useState("")
@@ -157,6 +159,8 @@ const ProductCreatePage = () => {
             short_description: shortDesc || null,
             serial_number: serialNumber || null,
             optics_ready: opticsReady,
+            contact_for_pricing: contactForPricing,
+            primary_category: primaryCategory || null,
             thumbnail_url: featuredImage || null,
             seo_meta_title: seoTitle || null,
             seo_meta_description: seoDesc || null,
@@ -316,6 +320,21 @@ const ProductCreatePage = () => {
                 checked={opticsReady}
                 onChange={setOpticsReady}
               />
+              <ToggleRow
+                id="c-cfp"
+                label="Contact Us For Pricing"
+                subtitle="Hides price on storefront"
+                checked={contactForPricing}
+                onChange={setContactForPricing}
+              />
+              <Field label="Primary Category" htmlFor="c-primary-cat">
+                <Input
+                  id="c-primary-cat"
+                  value={primaryCategory}
+                  onChange={(e) => setPrimaryCategory(e.target.value)}
+                  placeholder="e.g. Engraved, Prototype, Limited Edition"
+                />
+              </Field>
               <Field label="Thumbnail URL" htmlFor="c-img">
                 <Input
                   id="c-img"

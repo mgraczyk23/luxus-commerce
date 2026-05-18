@@ -21,6 +21,8 @@ type ImportItem = {
     short_description?: string
     serial_number?: string
     optics_ready?: boolean
+    contact_for_pricing?: boolean
+    primary_category?: string
     thumbnail_url?: string
     seo_meta_title?: string
     seo_meta_description?: string
@@ -131,6 +133,8 @@ async function importOne(
           short_description: item.details.short_description ?? null,
           serial_number: item.details.serial_number ?? null,
           optics_ready: item.details.optics_ready ?? false,
+          contact_for_pricing: item.details.contact_for_pricing ?? false,
+          primary_category: item.details.primary_category ?? null,
           thumbnail_url: item.details.thumbnail_url ?? null,
           seo_meta_title: item.details.seo_meta_title ?? null,
           seo_meta_description: item.details.seo_meta_description ?? null,

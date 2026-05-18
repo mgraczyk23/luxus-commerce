@@ -9,6 +9,8 @@ type ProductDetail = {
   short_description: string | null
   serial_number: string | null
   optics_ready: boolean
+  contact_for_pricing: boolean
+  primary_category: string | null
   seo_meta_title: string | null
   seo_meta_description: string | null
   thumbnail_url: string | null
@@ -18,6 +20,8 @@ const empty: ProductDetail = {
   short_description: "",
   serial_number: "",
   optics_ready: false,
+  contact_for_pricing: false,
+  primary_category: "",
   seo_meta_title: "",
   seo_meta_description: "",
   thumbnail_url: "",
@@ -93,6 +97,27 @@ const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
             id="pd-optics"
             checked={detail.optics_ready}
             onCheckedChange={(v) => set("optics_ready", v)}
+          />
+        </div>
+        <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-3 py-2">
+          <div>
+            <Label htmlFor="pd-cfp">Contact Us For Pricing</Label>
+            <p className="text-xs text-ui-fg-muted mt-0.5">Hides price on storefront — shows "Contact Us For Pricing" instead</p>
+          </div>
+          <Switch
+            id="pd-cfp"
+            checked={detail.contact_for_pricing}
+            onCheckedChange={(v) => set("contact_for_pricing", v)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="pd-primary-cat">Primary Category</Label>
+          <p className="text-xs text-ui-fg-muted mt-0.5 mb-1.5">Shown in the floating badge on product cards, e.g. "Engraved", "Prototype", "Limited Edition"</p>
+          <Input
+            id="pd-primary-cat"
+            value={detail.primary_category ?? ""}
+            onChange={(e) => set("primary_category", e.target.value)}
+            placeholder="e.g. Engraved, Prototype, Limited Edition"
           />
         </div>
         <div>
