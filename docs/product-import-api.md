@@ -42,6 +42,7 @@ All fields are optional except `title`.
 | `price` | number | Retail price in USD dollars (e.g. `3499.00`). Omit to create with no price |
 | `thumbnail` | string | URL of the thumbnail image shown on product cards |
 | `images` | string[] | Array of URLs for the product gallery (full-size detail images) |
+| `highlights` | object[] | Up to 4 highlight boxes shown below the product description. Each object has `title` (string) and `body` (string). Stored in `product.metadata.highlights` |
 
 > **Images must already be hosted.** Pass public URLs — either S3 URLs (`https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/...`) or any other publicly accessible URL. To upload files first and get URLs back, use `POST /admin/uploads` with an admin JWT token (see [Automated Import with Images](#automated-import-with-images) below).
 
@@ -179,6 +180,11 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "images": [
       "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-1.jpg",
       "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-2.jpg"
+    ],
+    "highlights": [
+      { "title": "One-Gun-One-Gunsmith", "body": "Built start-to-finish by a single master craftsman" },
+      { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped" },
+      { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" }
     ],
     "details": {
       "short_description": "Compact Government-size 1911 from Nighthawk Custom.",
@@ -447,6 +453,10 @@ for item in result["results"]:
     "sku": "NHC-AGENT-01",
     "price": 3499.00,
     "status": "draft",
+    "highlights": [
+      { "title": "One-Gun-One-Gunsmith", "body": "Built start-to-finish by a single master craftsman" },
+      { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped" }
+    ],
     "attributes": {
       "brand": "Nighthawk Custom",
       "caliber": ".45 ACP",

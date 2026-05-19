@@ -17,6 +17,7 @@ type ImportItem = {
   price?: number               // USD dollars, e.g. 3499.00
   thumbnail?: string           // URL of the product thumbnail image
   images?: string[]            // URLs of additional product gallery images
+  highlights?: Array<{ title: string; body: string }>  // max 4, stored in product.metadata
 
   // Custom modules
   details?: {
@@ -103,6 +104,9 @@ async function importOne(
       status: item.status ?? "draft",
       thumbnail: item.thumbnail,
       images: item.images?.map((url) => ({ url })),
+      metadata: item.highlights?.length
+        ? { highlights: item.highlights.slice(0, 4) }
+        : undefined,
       options: [{ title: "Title", values: ["Default"] }],
     }])
 
