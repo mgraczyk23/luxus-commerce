@@ -11,6 +11,7 @@ type ProductDetail = {
   optics_ready: boolean
   contact_for_pricing: boolean
   primary_category: string | null
+  engraver: string | null
   seo_meta_title: string | null
   seo_meta_description: string | null
 }
@@ -21,6 +22,7 @@ const empty: ProductDetail = {
   optics_ready: false,
   contact_for_pricing: false,
   primary_category: "",
+  engraver: "",
   seo_meta_title: "",
   seo_meta_description: "",
 }
@@ -116,6 +118,16 @@ const ProductDetailsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
             value={detail.primary_category ?? ""}
             onChange={(e) => set("primary_category", e.target.value)}
             placeholder="e.g. Engraved, Prototype, Limited Edition"
+          />
+        </div>
+        <div>
+          <Label htmlFor="pd-engraver">Engraver</Label>
+          <p className="text-xs text-ui-fg-muted mt-0.5 mb-1.5">When set, shows an "Engraved By [name]" callout on the product detail page</p>
+          <Input
+            id="pd-engraver"
+            value={detail.engraver ?? ""}
+            onChange={(e) => set("engraver", e.target.value)}
+            placeholder="e.g. Master Engraver John Doe"
           />
         </div>
         <div>

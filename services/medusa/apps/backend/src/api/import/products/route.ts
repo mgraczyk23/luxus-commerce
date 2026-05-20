@@ -10,6 +10,7 @@ import { INVENTORY_MANAGEMENT_MODULE } from "../../../modules/inventory-manageme
 type ImportItem = {
   // Medusa native fields
   title: string
+  subtitle?: string            // Short italic tagline shown under the title on the detail page
   handle?: string
   description?: string
   status?: "draft" | "published"
@@ -18,6 +19,10 @@ type ImportItem = {
   thumbnail?: string           // URL of the product thumbnail image
   images?: string[]            // URLs of additional product gallery images
   highlights?: Array<{ title: string; body: string }>  // max 4, stored in product.metadata
+  in_the_box?: string[]        // "What's in the Box" bullet list, stored in product.metadata
+  extra_specs?: Record<string, string>  // Additional spec table rows (Height, Slide Material, etc.)
+  categories?: string[]        // Product category handles (e.g. ["1911", "compact-edc"])
+  collection?: string          // Collection handle (e.g. "1911-series")
 
   // Custom modules
   details?: {
@@ -26,6 +31,7 @@ type ImportItem = {
     optics_ready?: boolean
     contact_for_pricing?: boolean
     primary_category?: string
+    engraver?: string
     seo_meta_title?: string
     seo_meta_description?: string
   }
@@ -87,26 +93,48 @@ async function importOne(
     attrService: any
     link: any
     attrLookup: Record<string, Record<string, string>> // typeSlug -> { valueLower -> valueId }
+    categoryHandleToId: Record<string, string>
+    collectionHandleToId: Record<string, string>
   }
 ): Promise<ImportResult> {
   const {
     productService, pricingService, detailsService, specsService,
     inventoryService, attrService, link, attrLookup,
+    categoryHandleToId, collectionHandleToId,
   } = deps
 
   try {
+    // Build metadata — merge highlights, in_the_box, and extra_specs
+    const metadata: Record<string, any> = {}
+    if (item.highlights?.length) metadata.highlights = item.highlights.slice(0, 4)
+    if (item.in_the_box?.length) metadata.in_the_box = item.in_the_box
+    if (item.extra_specs && Object.keys(item.extra_specs).length)
+      metadata.extra_specs = item.extra_specs
+
+    // Resolve category IDs from handles
+    const categoryIds = (item.categories ?? [])
+      .map((h) => categoryHandleToId[h])
+      .filter(Boolean)
+      .map((id) => ({ id }))
+
+    // Resolve collection ID from handle
+    const collectionId = item.collection
+      ? collectionHandleToId[item.collection]
+      : undefined
+
     // 1. Create product with options (no variants yet — module service requires
     //    option IDs when creating variants, so we do it in two steps)
     const [product] = await productService.createProducts([{
       title: item.title,
+      subtitle: item.subtitle,
       handle: item.handle ? slugify(item.handle) : slugify(item.title),
       description: item.description,
       status: item.status ?? "draft",
       thumbnail: item.thumbnail,
       images: item.images?.map((url) => ({ url })),
-      metadata: item.highlights?.length
-        ? { highlights: item.highlights.slice(0, 4) }
-        : undefined,
+      ...(Object.keys(metadata).length ? { metadata } : {}),
+      ...(categoryIds.length ? { categories: categoryIds } : {}),
+      ...(collectionId ? { collection_id: collectionId } : {}),
       options: [{ title: "Title", values: ["Default"] }],
     }])
 
@@ -131,7 +159,7 @@ async function importOne(
       })
     }
 
-    // 3. Custom records in parallel
+    // 4. Custom records in parallel
     const customOps: Promise<any>[] = []
 
     if (item.details) {
@@ -142,6 +170,7 @@ async function importOne(
           optics_ready: item.details.optics_ready ?? false,
           contact_for_pricing: item.details.contact_for_pricing ?? false,
           primary_category: item.details.primary_category ?? null,
+          engraver: item.details.engraver ?? null,
           seo_meta_title: item.details.seo_meta_title ?? null,
           seo_meta_description: item.details.seo_meta_description ?? null,
         }).then((detail: any) =>
@@ -200,10 +229,20 @@ async function importOne(
 
     await Promise.all(customOps)
 
-    // 4. Resolve and link attribute values
+    // 5. Resolve and link attribute values
+    const warnings: string[] = []
+
+    if (item.categories?.length) {
+      const unknown = item.categories.filter((h) => !categoryHandleToId[h])
+      for (const h of unknown) warnings.push(`Unknown category handle: "${h}"`)
+    }
+
+    if (item.collection && !collectionHandleToId[item.collection]) {
+      warnings.push(`Unknown collection handle: "${item.collection}"`)
+    }
+
     if (item.attributes && Object.keys(item.attributes).length > 0) {
       const valueIds: string[] = []
-      const warnings: string[] = []
 
       for (const [typeSlug, rawValues] of Object.entries(item.attributes)) {
         const valueMap = attrLookup[typeSlug]
@@ -231,16 +270,14 @@ async function importOne(
           }))
         )
       }
-
-      return {
-        title: item.title,
-        product_id: product.id,
-        success: true,
-        ...(warnings.length > 0 ? { warnings } : {}),
-      } as any
     }
 
-    return { title: item.title, product_id: product.id, success: true }
+    return {
+      title: item.title,
+      product_id: product.id,
+      success: true,
+      ...(warnings.length > 0 ? { warnings } : {}),
+    } as any
   } catch (err: any) {
     return { title: item.title, success: false, error: err.message ?? String(err) }
   }
@@ -256,17 +293,21 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   }
 
   // Resolve services once
-  const productService  = req.scope.resolve(Modules.PRODUCT)
-  const pricingService  = req.scope.resolve(Modules.PRICING)
-  const detailsService  = req.scope.resolve(PRODUCT_DETAILS_MODULE)
-  const specsService    = req.scope.resolve(PRODUCT_SPECS_MODULE)
+  const productService   = req.scope.resolve(Modules.PRODUCT)
+  const pricingService   = req.scope.resolve(Modules.PRICING)
+  const detailsService   = req.scope.resolve(PRODUCT_DETAILS_MODULE)
+  const specsService     = req.scope.resolve(PRODUCT_SPECS_MODULE)
   const inventoryService = req.scope.resolve(INVENTORY_MANAGEMENT_MODULE)
-  const attrService     = req.scope.resolve(PRODUCT_ATTRIBUTES_MODULE)
-  const link            = req.scope.resolve(ContainerRegistrationKeys.LINK)
+  const attrService      = req.scope.resolve(PRODUCT_ATTRIBUTES_MODULE)
+  const link             = req.scope.resolve(ContainerRegistrationKeys.LINK)
 
   // Build attribute lookup table once for all items
-  const allTypes  = await attrService.listAttributeTypes({})
-  const allValues = await attrService.listAttributeValues({})
+  const [allTypes, allValues, allCategories, allCollections] = await Promise.all([
+    attrService.listAttributeTypes({}),
+    attrService.listAttributeValues({}),
+    productService.listProductCategories({}),
+    productService.listProductCollections({}),
+  ])
 
   const attrLookup: Record<string, Record<string, string>> = {}
   for (const type of allTypes as any[]) {
@@ -278,9 +319,18 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     }
   }
 
+  const categoryHandleToId: Record<string, string> = Object.fromEntries(
+    (allCategories as any[]).map((c) => [c.handle, c.id])
+  )
+
+  const collectionHandleToId: Record<string, string> = Object.fromEntries(
+    (allCollections as any[]).map((c) => [c.handle, c.id])
+  )
+
   const deps = {
     productService, pricingService, detailsService, specsService,
     inventoryService, attrService, link, attrLookup,
+    categoryHandleToId, collectionHandleToId,
   }
 
   // Process sequentially to avoid unique-handle conflicts in rapid bulk imports

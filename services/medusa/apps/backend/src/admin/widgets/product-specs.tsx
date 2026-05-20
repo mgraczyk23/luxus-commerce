@@ -71,7 +71,13 @@ const ProductSpecsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   return (
     <Container className="divide-y p-0">
       <div className="flex items-center justify-between px-6 py-4">
-        <Heading level="h2">Product Specs</Heading>
+        <div>
+          <Heading level="h2">Product Specs</Heading>
+          <p className="text-xs text-ui-fg-muted mt-0.5">
+            Caliber, Action, Barrel Length, Capacity, and Frame Color auto-populate from
+            Product Attributes — no need to enter them here.
+          </p>
+        </div>
         <Button size="small" onClick={handleSave} isLoading={saving}>
           Save
         </Button>

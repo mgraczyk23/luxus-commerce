@@ -35,14 +35,19 @@ All fields are optional except `title`.
 | Field | Type | Description |
 |---|---|---|
 | `title` | string **(required)** | Product name displayed in admin and storefront |
+| `subtitle` | string | Short italic tagline under the title on the detail page, e.g. `"Compact Government 1911 · Berryville, Arkansas"` |
 | `handle` | string | URL-safe slug. Auto-generated from title if omitted |
-| `description` | string | Full HTML or plain text product description |
+| `description` | string | Full HTML or plain text product description (the "About This Piece" section) |
 | `status` | `"draft"` \| `"published"` | Listing status. Defaults to `"draft"` |
 | `sku` | string | Stock-keeping unit identifier for the variant |
 | `price` | number | Retail price in USD dollars (e.g. `3499.00`). Omit to create with no price |
 | `thumbnail` | string | URL of the thumbnail image shown on product cards |
 | `images` | string[] | Array of URLs for the product gallery (full-size detail images) |
-| `highlights` | object[] | Up to 4 highlight boxes shown below the product description. Each object has `title` (string) and `body` (string). Stored in `product.metadata.highlights` |
+| `highlights` | object[] | Up to 4 highlight boxes shown below the product description. Each object has `title` (string) and `body` (string) |
+| `in_the_box` | string[] | Bullet list of included items for the "What's Included" tab. Tab is hidden when empty |
+| `extra_specs` | object | Additional specification rows beyond product_specs (e.g. Height, Slide Material, Country of Origin). Free-form `{ "Key": "Value" }` pairs |
+| `categories` | string[] | Product category handles to assign, e.g. `["1911", "compact-edc"]`. Must exist in Medusa admin |
+| `collection` | string | Collection handle to assign, e.g. `"1911-series"`. Must exist in Medusa admin |
 
 > **Images must already be hosted.** Pass public URLs — either S3 URLs (`https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/...`) or any other publicly accessible URL. To upload files first and get URLs back, use `POST /admin/uploads` with an admin JWT token (see [Automated Import with Images](#automated-import-with-images) below).
 
@@ -55,6 +60,7 @@ All fields are optional except `title`.
 | `optics_ready` | boolean | Whether the pistol is optics-ready — **public** |
 | `contact_for_pricing` | boolean | Hides price on storefront, shows "Contact Us For Pricing" instead — **public** |
 | `primary_category` | string | Floating badge on product card, e.g. "Engraved", "Prototype" — **public** |
+| `engraver` | string | Engraver name. When set, shows "Engraved By [name]" callout on the detail page — **public** |
 | `seo_meta_title` | string | `<title>` tag override for the PDP — **public** |
 | `seo_meta_description` | string | Meta description for the PDP — **public** |
 
@@ -171,11 +177,14 @@ curl -X POST https://api.luxus-collection.com/import/products \
   -H "X-Api-Key: YOUR_API_KEY" \
   -d '{
     "title": "Nighthawk Custom Agent",
+    "subtitle": "Compact Government 1911 · Berryville, Arkansas",
     "handle": "nighthawk-custom-agent",
     "description": "The Agent is a compact Government-size 1911 built to exacting tolerances.",
     "status": "published",
     "sku": "NHC-AGENT-01",
     "price": 3499.00,
+    "categories": ["1911"],
+    "collection": "1911-series",
     "thumbnail": "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-thumb.jpg",
     "images": [
       "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-1.jpg",
@@ -186,10 +195,27 @@ curl -X POST https://api.luxus-collection.com/import/products \
       { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped" },
       { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" }
     ],
+    "in_the_box": [
+      "Nighthawk Custom Agent pistol",
+      "Two 8-round Wilson Combat magazines",
+      "Fitted lockable hard case",
+      "Certificate of authenticity",
+      "Lock"
+    ],
+    "extra_specs": {
+      "Height": "5.25\"",
+      "Width": "1.3\"",
+      "Capacity": "8+1",
+      "Slide Material": "416 Stainless Steel",
+      "Safety": "Ambidextrous Thumb Safety",
+      "Country of Origin": "United States"
+    },
     "details": {
       "short_description": "Compact Government-size 1911 from Nighthawk Custom.",
       "serial_number": "NHC-12345",
       "optics_ready": true,
+      "primary_category": "Limited Edition",
+      "engraver": "Master Engraver John Doe",
       "seo_meta_title": "Nighthawk Custom Agent 1911 — Luxus Collection",
       "seo_meta_description": "Buy the Nighthawk Custom Agent 1911 in .45 ACP at Luxus Collection."
     },
@@ -497,3 +523,9 @@ Images are matched to products by SKU automatically. Products with no matching i
 **Bulk imports process sequentially.** Items are processed one at a time to avoid duplicate-handle collisions. For large catalogs, expect roughly 1-2 seconds per product.
 
 **Images must be uploaded before import.** The import API accepts URLs only — it does not accept file uploads directly. Use the automated script above or upload images manually via the admin Media tab first.
+
+**Specs are combined automatically — don't set them twice.** The store specs endpoint (`GET /store/products/:id/specs`) combines data from three sources: (1) product_attributes (Caliber, Action, Barrel Length, Capacity, Frame Color), (2) product_specs (Overall Length, Weight, Frame Material, Grips, Sights, Finish), and (3) `extra_specs` (any additional rows). Set each value in its appropriate place — they merge automatically on the storefront.
+
+**Specs and In The Box tabs hide when empty.** The store specs endpoint returns `null` when no specs are set; the store attributes endpoint returns an empty array when none are assigned. The storefront uses these to show or hide the tabs. If you want a tab hidden, simply don't set any data for it.
+
+**Categories and collections must exist first.** Create them in Medusa Admin (Settings → Categories, Products → Collections) before running an import that references them. Unknown handles are reported as warnings in the import response but do not fail the import.

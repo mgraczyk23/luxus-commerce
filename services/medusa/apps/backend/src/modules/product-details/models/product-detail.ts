@@ -7,6 +7,7 @@ const ProductDetail = model.define("product_detail", {
   optics_ready: model.boolean().default(false),
   contact_for_pricing: model.boolean().default(false),
   primary_category: model.text().nullable(),
+  engraver: model.text().nullable(),
   seo_meta_title: model.text().nullable(),
   seo_meta_description: model.text().nullable(),
 })
