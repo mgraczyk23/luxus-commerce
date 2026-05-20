@@ -2,7 +2,7 @@
 
 **Base URL:** `https://api.luxus-collection.com`  
 **Endpoint:** `POST /import/products`  
-**Auth:** Static API key via request header  
+**Auth:** Static API key via request header
 
 ---
 
@@ -26,58 +26,123 @@ Requests without a valid key return `401 Unauthorized`.
 
 ---
 
-## Product Object Schema
+## Full Product Object Schema
 
 All fields are optional except `title`.
+
+---
 
 ### Core Fields
 
 | Field | Type | Description |
 |---|---|---|
-| `title` | string **(required)** | Product name displayed in admin and storefront |
-| `subtitle` | string | Short italic tagline under the title on the detail page, e.g. `"Compact Government 1911 · Berryville, Arkansas"` |
-| `handle` | string | URL-safe slug. Auto-generated from title if omitted |
-| `description` | string | Full HTML or plain text product description (the "About This Piece" section) |
-| `status` | `"draft"` \| `"published"` | Listing status. Defaults to `"draft"` |
-| `sku` | string | Stock-keeping unit identifier for the variant |
-| `price` | number | Retail price in USD dollars (e.g. `3499.00`). Omit to create with no price |
-| `thumbnail` | string | URL of the thumbnail image shown on product cards |
-| `images` | string[] | Array of URLs for the product gallery (full-size detail images) |
-| `highlights` | object[] | Up to 4 highlight boxes shown below the product description. Each object has `title` (string) and `body` (string) |
-| `in_the_box` | string[] | Bullet list of included items for the "What's Included" tab. Tab is hidden when empty |
-| `extra_specs` | object | Additional specification rows beyond product_specs (e.g. Height, Slide Material, Country of Origin). Free-form `{ "Key": "Value" }` pairs |
-| `categories` | string[] | Product category handles to assign, e.g. `["1911", "compact-edc"]`. Must exist in Medusa admin |
-| `collection` | string | Collection handle to assign, e.g. `"1911-series"`. Must exist in Medusa admin |
+| `title` | string **(required)** | Product display name |
+| `subtitle` | string | Short italic tagline shown under the title on the detail page. e.g. `"Compact Government 1911 · Berryville, Arkansas"` |
+| `handle` | string | URL slug — `/product/<handle>`. Auto-generated from title if omitted. Must be unique |
+| `description` | string | Long-form product description shown in the "About This Piece" section. HTML or plain text |
+| `status` | `"draft"` \| `"published"` | Defaults to `"draft"`. Set `"published"` to make the product live immediately |
+| `sku` | string | Stock-keeping unit identifier shown on the detail page |
+| `price` | number | Retail price in USD dollars (e.g. `3499.00`). The API converts to cents internally. Omit to create with no price |
+| `thumbnail` | string | URL of the primary image shown on product cards and at the top of the gallery |
+| `images` | string[] | Ordered array of URLs for the detail page gallery. See [Images](#images) below |
+| `categories` | string[] | Category handles to assign, e.g. `["1911", "compact-edc"]`. Create categories in Medusa Admin → Settings → Categories |
+| `collection` | string | Single collection handle to assign, e.g. `"1911-series"`. Create collections in Medusa Admin → Products → Collections |
 
-> **Images must already be hosted.** Pass public URLs — either S3 URLs (`https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/...`) or any other publicly accessible URL. To upload files first and get URLs back, use `POST /admin/uploads` with an admin JWT token (see [Automated Import with Images](#automated-import-with-images) below).
+---
 
-### `details` Object — Partially storefront visible (see note)
+### `highlights` — Overview tab feature boxes
 
-| Field | Type | Description |
-|---|---|---|
-| `short_description` | string | Brief summary shown on product cards — **public** |
-| `serial_number` | string | Firearm serial number — **admin only, never returned by store API** |
-| `optics_ready` | boolean | Whether the pistol is optics-ready — **public** |
-| `contact_for_pricing` | boolean | Hides price on storefront, shows "Contact Us For Pricing" instead — **public** |
-| `primary_category` | string | Floating badge on product card, e.g. "Engraved", "Prototype" — **public** |
-| `engraver` | string | Engraver name. When set, shows "Engraved By [name]" callout on the detail page — **public** |
-| `seo_meta_title` | string | `<title>` tag override for the PDP — **public** |
-| `seo_meta_description` | string | Meta description for the PDP — **public** |
-
-> **Serial number privacy:** `serial_number` is stored server-side and returned only by admin API routes. The store endpoint (`GET /store/products/[id]/details`) explicitly excludes it so it can never be read by the storefront or any public client.
-
-### `specs` Object — Storefront visible
+Array of up to **4** objects. Displayed as a responsive grid below the product description. Hidden when empty.
 
 | Field | Type | Description |
 |---|---|---|
-| `overall_length` | string | e.g. `"8.75\""` |
-| `weight` | string | e.g. `"38 oz"` |
-| `frame_material` | string | e.g. `"Stainless Steel"` |
-| `grip_material` | string | e.g. `"G10"` |
-| `sight_type` | string | e.g. `"Tritium Night Sights"` |
-| `finish_type` | string | e.g. `"Cerakote Black"` |
+| `title` | string | Short bold heading for the box |
+| `body` | string | One or two sentence description |
+
+```json
+"highlights": [
+  { "title": "One-Gun-One-Gunsmith", "body": "Built start-to-finish by a single master craftsman" },
+  { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped for zero slop" },
+  { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" },
+  { "title": "Heinie Night Sights", "body": "Tritium-filled Straight Eight ledge sights, factory installed" }
+]
+```
+
+---
+
+### `in_the_box` — What's Included tab
+
+Array of strings rendered as a bullet list. The tab is hidden on the storefront when this is empty or omitted.
+
+```json
+"in_the_box": [
+  "Nighthawk Custom Agent pistol",
+  "Two 8-round Wilson Combat magazines",
+  "Fitted lockable hard case",
+  "Certificate of authenticity (signed by building gunsmith)",
+  "Instruction manual",
+  "Lock"
+]
+```
+
+---
+
+### `extra_specs` — Additional specification rows
+
+Free-form key/value object for spec table rows that don't fit the structured `specs` fields. Rendered after the structured specs in the Specifications tab.
+
+```json
+"extra_specs": {
+  "Height": "5.25\"",
+  "Width": "1.3\"",
+  "Capacity": "8+1",
+  "Slide Material": "416 Stainless Steel",
+  "Safety": "Ambidextrous Thumb Safety",
+  "Country of Origin": "United States"
+}
+```
+
+> **Don't double-enter specs.** Caliber, Action, Barrel Length, Capacity, and Frame Color are pulled automatically from the `attributes` block into the spec table. Overall Length, Weight, Frame Material, Grips, Sights, and Finish come from the `specs` block. Use `extra_specs` only for rows that don't fit those two places.
+
+---
+
+### `details` Object — Per-product editorial and display settings
+
+Partially storefront visible — see visibility column.
+
+| Field | Type | Visibility | Description |
+|---|---|---|---|
+| `short_description` | string | Public | One-paragraph summary shown below the subtitle on the detail page |
+| `serial_number` | string | **Admin only** | Firearm serial number — never returned by the store API |
+| `optics_ready` | boolean | Public | Whether the pistol accepts optics without modification. Also flows into the Specifications tab as "Optics Ready: Yes/No" |
+| `contact_for_pricing` | boolean | Public | When `true`, hides the price and replaces the Add to Cart button with a "Contact Us For Pricing" modal |
+| `primary_category` | string | Public | Floating gold badge on product cards. e.g. `"Engraved"`, `"Prototype"`, `"Limited Edition"`, `"Heritage"`. Leave omitted for no badge |
+| `engraver` | string | Public | When set, displays an "Engraved By [name]" callout on the detail page. Leave omitted on non-engraved pieces |
+| `seo_meta_title` | string | Public | Overrides the `<title>` tag on the product detail page |
+| `seo_meta_description` | string | Public | Sets the meta description for the product detail page |
+
+> **Serial number privacy:** `serial_number` is stored server-side and returned only by admin API routes. The public store endpoint explicitly excludes it. Serial numbers can be traced through manufacturer records to dealer cost — never expose them publicly.
+
+---
+
+### `specs` Object — Structured specification fields
+
+These render as named rows in the Specifications tab. Hidden when all fields are null.
+
+| Field | Type | Renders as | Example |
+|---|---|---|---|
+| `overall_length` | string | Overall Length | `"8.75\""` |
+| `weight` | string | Weight (Unloaded) | `"40.9 oz"` |
+| `frame_material` | string | Frame Material | `"416 Stainless Steel"` |
+| `grip_material` | string | Grips | `"G10 Piranha — Black / Grey"` |
+| `sight_type` | string | Sights | `"Heinie Straight Eight Ledge — Night Sights"` |
+| `finish_type` | string | Finish | `"DLC (Diamond-Like Carbon) — Black"` |
+
+---
 
 ### `inventory` Object — Admin only, never exposed in store API
+
+All fields in this block are strictly internal. They are never returned by any public or store-facing endpoint.
 
 | Field | Type | Description |
 |---|---|---|
@@ -87,36 +152,39 @@ All fields are optional except `title`.
 | `consignor_name` | string | Consignor display name |
 | `consignor_contact` | string | Consignor phone or email |
 | `consignor_cost` | number | Amount owed to consignor on sale (USD) |
-| `suggested_sale_price` | number | Consignor's suggested price (USD) |
+| `suggested_sale_price` | number | Consignor's suggested retail price (USD) |
 | `consignment_notes` | string | Internal notes about the consignment |
-| `imported_by_luxus` | boolean | Whether Luxus handled the import |
+| `imported_by_luxus` | boolean | Whether Luxus Collection handled the import/transfer |
 | `importer_name` | string | Name of the importing entity |
 | `importer_mark` | string | Importer's mark stamped on the firearm |
-| `importer_mark_location` | string | Location of the importer's mark |
-| `is_master_backroom` | boolean | In backroom pool but hidden from VIP display |
+| `importer_mark_location` | string | Location of the importer's mark on the firearm |
+| `is_master_backroom` | boolean | In the backroom pool but hidden from VIP display |
 | `is_backroom` | boolean | Actively shown in the VIP/backroom area |
+
+---
 
 ### `attributes` Object — Filterable product attributes
 
-Key-value pairs where the key is an attribute type **slug** and the value is either a single string or an array of strings.
+Key/value pairs where the key is an attribute type **slug** and the value is a string or array of strings. These power the listing page filters and also auto-populate the Specifications tab (Caliber, Action, Barrel Length, Capacity, Frame Color).
 
-- Use an **array** for multi-select attribute types (e.g. Brand)
-- Use a **string** for single-select attribute types (e.g. Model, Action)
-- Unknown slugs or values are reported as warnings but do not fail the import
+- **Multi-select types** (brand, caliber): pass a single string or an array
+- **Single-select types** (action, barrel-length, frame-color, magazine-capacity, model): pass a single string
+- Unknown slugs or values produce a warning in the response but do not fail the import
+- Values are matched **case-insensitively** — `".45 acp"` matches `".45 ACP"`
 
-**Available attribute type slugs:**
+**Attribute types and their slugs:**
 
-| Slug | Type | Current Values |
+| Slug | Select type | Notes |
 |---|---|---|
-| `brand` | Multi-select | `Nighthawk Custom`, `Cabot Guns`, `Korth`, `SIG Sauer`, `Colt` |
-| `caliber` | Multi-select | `.45 ACP`, `9mm`, `.38 Super`, `10mm`, `.40 S&W`, `.357 Magnum`, `.22 LR` |
-| `action` | Single-select | `Single Action`, `Double Action`, `Double/Single Action`, `Single Action Only` |
-| `barrel-length` | Single-select | `3"`, `3.5"`, `4.25"`, `5"`, `5.5"`, `6"` |
-| `frame-color` | Single-select | `Black`, `Silver`, `Two-Tone`, `Bronze`, `Custom`, `Blue` |
-| `magazine-capacity` | Single-select | `7`, `8`, `9`, `10`, `14`, `15`, `17` |
-| `model` | Single-select | Values managed via admin. Add new models at `/app/product-attributes` before importing |
+| `brand` | Multi-select | Manufacturer name. Drives the Brand filter and card eyebrow |
+| `caliber` | Multi-select | Drives the Caliber filter and the "Caliber" row in the spec table |
+| `action` | Single-select | Drives the Action filter and the "Action" row in the spec table |
+| `barrel-length` | Single-select | Drives the Barrel Length filter and the "Barrel Length" row in the spec table |
+| `frame-color` | Single-select | Drives the Frame Color filter and the "Frame Color" row in the spec table |
+| `magazine-capacity` | Single-select | Drives the Capacity filter and the "Capacity" row in the spec table |
+| `model` | Single-select | Drives the Model filter |
 
-> **Note:** Attribute values are matched case-insensitively. `".45 acp"` matches `".45 ACP"`. Values must already exist in the database — the import does not create new attribute values on the fly.
+> **Values are managed in the admin, not hardcoded here.** Go to `/app/product-attributes` in the Medusa admin to see current values, add new ones, or add new attribute types. New brands, calibers, models, etc. must be added there before they can be referenced in an import.
 
 ---
 
@@ -147,15 +215,16 @@ Key-value pairs where the key is an attribute type **slug** and the value is eit
 }
 ```
 
-- HTTP `201` when at least one product was created
-- HTTP `400` when all products failed or the body is empty
+- **HTTP 201** when at least one product was created
+- **HTTP 400** when all products failed or the body is empty
 - Bulk imports process each item independently — one failure does not stop the rest
+- Warnings (unknown attribute values, unknown category/collection handles) are reported per item but do not fail the import
 
 ---
 
 ## Examples
 
-### Single product — minimal
+### Minimal — title and price only
 
 ```bash
 curl -X POST https://api.luxus-collection.com/import/products \
@@ -169,7 +238,7 @@ curl -X POST https://api.luxus-collection.com/import/products \
   }'
 ```
 
-### Single product — all fields
+### Complete single product — all fields
 
 ```bash
 curl -X POST https://api.luxus-collection.com/import/products \
@@ -179,8 +248,8 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "title": "Nighthawk Custom Agent",
     "subtitle": "Compact Government 1911 · Berryville, Arkansas",
     "handle": "nighthawk-custom-agent",
-    "description": "The Agent is a compact Government-size 1911 built to exacting tolerances.",
-    "status": "published",
+    "description": "The Agent is a compact Government-size 1911 built to exacting tolerances by a single Nighthawk gunsmith from first cut to final proof.",
+    "status": "draft",
     "sku": "NHC-AGENT-01",
     "price": 3499.00,
     "categories": ["1911"],
@@ -188,44 +257,47 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "thumbnail": "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-thumb.jpg",
     "images": [
       "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-1.jpg",
-      "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-2.jpg"
+      "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-2.jpg",
+      "https://luxus-collection-media.s3.us-east-1.amazonaws.com/uploads/NHC-AGENT-01-3.jpg"
     ],
     "highlights": [
       { "title": "One-Gun-One-Gunsmith", "body": "Built start-to-finish by a single master craftsman" },
-      { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped" },
-      { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" }
+      { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped for zero slop" },
+      { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" },
+      { "title": "Heinie Night Sights", "body": "Tritium-filled Straight Eight ledge sights, factory installed" }
     ],
     "in_the_box": [
       "Nighthawk Custom Agent pistol",
       "Two 8-round Wilson Combat magazines",
       "Fitted lockable hard case",
-      "Certificate of authenticity",
+      "Certificate of authenticity (signed by building gunsmith)",
+      "Instruction manual",
       "Lock"
     ],
-    "extra_specs": {
-      "Height": "5.25\"",
-      "Width": "1.3\"",
-      "Capacity": "8+1",
-      "Slide Material": "416 Stainless Steel",
-      "Safety": "Ambidextrous Thumb Safety",
-      "Country of Origin": "United States"
-    },
     "details": {
-      "short_description": "Compact Government-size 1911 from Nighthawk Custom.",
+      "short_description": "Compact Government-size 1911 hand-built by a single Nighthawk Custom gunsmith.",
       "serial_number": "NHC-12345",
-      "optics_ready": true,
+      "optics_ready": false,
+      "contact_for_pricing": false,
       "primary_category": "Limited Edition",
-      "engraver": "Master Engraver John Doe",
+      "engraver": null,
       "seo_meta_title": "Nighthawk Custom Agent 1911 — Luxus Collection",
       "seo_meta_description": "Buy the Nighthawk Custom Agent 1911 in .45 ACP at Luxus Collection."
     },
     "specs": {
       "overall_length": "8.75\"",
-      "weight": "38 oz",
-      "frame_material": "Carbon Steel",
-      "grip_material": "G10",
-      "sight_type": "Tritium Night Sights",
-      "finish_type": "Cerakote Black"
+      "weight": "40.9 oz",
+      "frame_material": "416 Stainless Steel",
+      "grip_material": "G10 Piranha — Black / Grey",
+      "sight_type": "Heinie Straight Eight Ledge — Night Sights",
+      "finish_type": "DLC (Diamond-Like Carbon) — Black"
+    },
+    "extra_specs": {
+      "Height": "5.25\"",
+      "Width": "1.3\"",
+      "Slide Material": "416 Stainless Steel",
+      "Safety": "Ambidextrous Thumb Safety",
+      "Country of Origin": "United States"
     },
     "inventory": {
       "item_cost": 2800.00,
@@ -247,7 +319,7 @@ curl -X POST https://api.luxus-collection.com/import/products \
   }'
 ```
 
-### Single product — consignment
+### Consignment item
 
 ```bash
 curl -X POST https://api.luxus-collection.com/import/products \
@@ -258,8 +330,10 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "sku": "CAB-AJ-001",
     "price": 7995.00,
     "status": "draft",
+    "categories": ["1911"],
     "details": {
-      "serial_number": "CAB-00199"
+      "serial_number": "CAB-00199",
+      "short_description": "One of only 100 ever made."
     },
     "inventory": {
       "is_consignment": true,
@@ -277,35 +351,26 @@ curl -X POST https://api.luxus-collection.com/import/products \
   }'
 ```
 
-### Bulk import — array of products
+### Contact for pricing (no price shown on site)
 
 ```bash
 curl -X POST https://api.luxus-collection.com/import/products \
   -H "Content-Type: application/json" \
   -H "X-Api-Key: YOUR_API_KEY" \
-  -d '[
-    {
-      "title": "Nighthawk Custom Falcon",
-      "sku": "NHC-FALCON-01",
-      "price": 3799.00,
-      "attributes": {
-        "brand": "Nighthawk Custom",
-        "caliber": ".45 ACP",
-        "action": "Single Action",
-        "barrel-length": "5\""
-      }
+  -d '{
+    "title": "Cabot Guns Big Bang Pistol Set",
+    "sku": "CAB-BBS-001",
+    "status": "published",
+    "details": {
+      "contact_for_pricing": true,
+      "short_description": "A matched pair machined from a single meteorite. One of one."
     },
-    {
-      "title": "Korth National Standard",
-      "sku": "KOR-NS-357-01",
-      "price": 2499.00,
-      "attributes": {
-        "brand": "Korth",
-        "caliber": ".357 Magnum",
-        "action": "Double Action"
-      }
+    "attributes": {
+      "brand": "Cabot Guns",
+      "caliber": ".45 ACP",
+      "action": "Single Action"
     }
-  ]'
+  }'
 ```
 
 ### Multi-brand set
@@ -327,6 +392,39 @@ curl -X POST https://api.luxus-collection.com/import/products \
   }'
 ```
 
+### Bulk import — array of products
+
+```bash
+curl -X POST https://api.luxus-collection.com/import/products \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: YOUR_API_KEY" \
+  -d '[
+    {
+      "title": "Nighthawk Custom Falcon",
+      "sku": "NHC-FALCON-01",
+      "price": 3799.00,
+      "categories": ["1911"],
+      "attributes": {
+        "brand": "Nighthawk Custom",
+        "caliber": ".45 ACP",
+        "action": "Single Action",
+        "barrel-length": "5\""
+      }
+    },
+    {
+      "title": "Korth National Standard",
+      "sku": "KOR-NS-357-01",
+      "price": 2499.00,
+      "categories": ["revolver"],
+      "attributes": {
+        "brand": "Korth",
+        "caliber": ".357 Magnum",
+        "action": "Double Action"
+      }
+    }
+  ]'
+```
+
 ---
 
 ## Python Example
@@ -341,10 +439,7 @@ def import_product(product: dict) -> dict:
     response = requests.post(
         f"{BASE_URL}/import/products",
         json=product,
-        headers={
-            "Content-Type": "application/json",
-            "X-Api-Key": API_KEY,
-        }
+        headers={"Content-Type": "application/json", "X-Api-Key": API_KEY},
     )
     response.raise_for_status()
     return response.json()
@@ -353,15 +448,11 @@ def bulk_import(products: list) -> dict:
     response = requests.post(
         f"{BASE_URL}/import/products",
         json=products,
-        headers={
-            "Content-Type": "application/json",
-            "X-Api-Key": API_KEY,
-        }
+        headers={"Content-Type": "application/json", "X-Api-Key": API_KEY},
     )
     response.raise_for_status()
     return response.json()
 
-# Example usage
 result = import_product({
     "title": "Nighthawk Custom Agent",
     "sku": "NHC-AGENT-01",
@@ -370,7 +461,7 @@ result = import_product({
         "brand": "Nighthawk Custom",
         "caliber": ".45 ACP",
         "action": "Single Action",
-    }
+    },
 })
 
 print(f"Created: {result['created']}, Failed: {result['failed']}")
@@ -385,7 +476,7 @@ for item in result["results"]:
 
 ## Automated Import with Images
 
-For bulk imports where you have image files on disk, use a two-step script: upload each image to Medusa (which stores it in S3 and returns the URL), then call the import API with the URLs attached.
+For bulk imports where you have image files on disk, upload them first (Medusa stores them in S3 and returns the URL), then call the import API with those URLs.
 
 ### Folder structure
 
@@ -393,9 +484,9 @@ For bulk imports where you have image files on disk, use a two-step script: uplo
 import/
   products.json
   images/
-    NHC-AGENT-01-thumb.jpg     ← thumbnail (SKU + "-thumb")
-    NHC-AGENT-01-1.jpg         ← gallery image 1 (SKU + "-1")
-    NHC-AGENT-01-2.jpg         ← gallery image 2 (SKU + "-2")
+    NHC-AGENT-01-thumb.jpg     ← thumbnail  (SKU + "-thumb")
+    NHC-AGENT-01-1.jpg         ← gallery 1  (SKU + "-1")
+    NHC-AGENT-01-2.jpg         ← gallery 2  (SKU + "-2")
     CAB-AJ-001-thumb.jpg
     CAB-AJ-001-1.jpg
 ```
@@ -407,16 +498,14 @@ import requests
 import json
 from pathlib import Path
 
-MEDUSA_URL = "https://api.luxus-collection.com"
+MEDUSA_URL    = "https://api.luxus-collection.com"
 IMPORT_API_KEY = "your-import-api-key"
-ADMIN_EMAIL = "your-admin@email.com"
+ADMIN_EMAIL   = "your-admin@email.com"
 ADMIN_PASSWORD = "your-password"
 
 def get_auth_token():
-    r = requests.post(f"{MEDUSA_URL}/auth/user/emailpass", json={
-        "email": ADMIN_EMAIL,
-        "password": ADMIN_PASSWORD,
-    })
+    r = requests.post(f"{MEDUSA_URL}/auth/user/emailpass",
+                      json={"email": ADMIN_EMAIL, "password": ADMIN_PASSWORD})
     r.raise_for_status()
     return r.json()["token"]
 
@@ -433,18 +522,15 @@ def upload_image(token: str, file_path: Path) -> str:
 def import_products(products: list) -> dict:
     r = requests.post(
         f"{MEDUSA_URL}/import/products",
-        headers={
-            "Content-Type": "application/json",
-            "X-Api-Key": IMPORT_API_KEY,
-        },
+        headers={"Content-Type": "application/json", "X-Api-Key": IMPORT_API_KEY},
         json=products,
     )
     r.raise_for_status()
     return r.json()
 
-token = get_auth_token()
+token     = get_auth_token()
 image_dir = Path("images")
-products = json.loads(Path("products.json").read_text())
+products  = json.loads(Path("products.json").read_text())
 
 for product in products:
     sku = product.get("sku", "")
@@ -470,35 +556,53 @@ for item in result["results"]:
     print(f"  {status} {item['title']} — {detail}")
 ```
 
-### `products.json` format
+### `products.json` reference format
 
 ```json
 [
   {
     "title": "Nighthawk Custom Agent",
+    "subtitle": "Compact Government 1911 · Berryville, Arkansas",
     "sku": "NHC-AGENT-01",
     "price": 3499.00,
     "status": "draft",
+    "categories": ["1911"],
+    "collection": "1911-series",
     "highlights": [
       { "title": "One-Gun-One-Gunsmith", "body": "Built start-to-finish by a single master craftsman" },
-      { "title": "Hand-Fitted Components", "body": "Each part individually fitted and lapped" }
+      { "title": "DLC Finish", "body": "Diamond-Like Carbon coating — harder than tool steel" }
     ],
+    "in_the_box": [
+      "Nighthawk Custom Agent pistol",
+      "Two 8-round Wilson Combat magazines",
+      "Fitted lockable hard case"
+    ],
+    "details": {
+      "short_description": "Compact Government-size 1911 from Nighthawk Custom.",
+      "serial_number": "NHC-12345",
+      "optics_ready": false,
+      "primary_category": "Limited Edition"
+    },
+    "specs": {
+      "overall_length": "8.75\"",
+      "weight": "40.9 oz",
+      "frame_material": "416 Stainless Steel",
+      "grip_material": "G10",
+      "sight_type": "Heinie Straight Eight Night Sights",
+      "finish_type": "DLC — Black"
+    },
+    "extra_specs": {
+      "Safety": "Ambidextrous Thumb Safety",
+      "Country of Origin": "United States"
+    },
     "attributes": {
       "brand": "Nighthawk Custom",
       "caliber": ".45 ACP",
       "action": "Single Action",
-      "barrel-length": "5\""
-    }
-  },
-  {
-    "title": "Cabot Guns American Joe",
-    "sku": "CAB-AJ-001",
-    "price": 7995.00,
-    "status": "draft",
-    "attributes": {
-      "brand": "Cabot Guns",
-      "caliber": ".45 ACP",
-      "action": "Single Action"
+      "barrel-length": "5\"",
+      "frame-color": "Black",
+      "magazine-capacity": "8",
+      "model": "Agent"
     }
   }
 ]
@@ -510,22 +614,22 @@ Images are matched to products by SKU automatically. Products with no matching i
 
 ## Notes and Gotchas
 
-**Handles must be unique.** If you import a product with the same title twice without specifying a `handle`, the second import may fail with a duplicate handle error. Always set an explicit `handle` for programmatic imports, or ensure titles are unique.
+**Handles must be unique.** If you import the same title twice without an explicit `handle`, the second import fails with a duplicate handle error. Always set an explicit `handle` for programmatic imports.
 
-**Prices are in dollars, stored in cents.** Pass `3499.00` for a $3,499 item. The API converts to cents internally.
+**Prices are in dollars, stored in cents.** Pass `3499.00` for a $3,499 item.
 
-**Attribute values must pre-exist.** The import does not create new attribute types or values. Add new models, calibers, etc. via the admin at `/app/product-attributes` before running an import that references them.
+**Attribute values must already exist.** The import does not create new attribute types or values on the fly. Add new brands, models, calibers, etc. via the admin at `/app/product-attributes` before running an import that references them.
 
-**Products are created as `draft` by default.** Set `"status": "published"` to make them immediately visible on the storefront.
+**Categories and collections must already exist.** Create them in Medusa Admin before importing. Unknown handles produce a warning in the response but do not fail the import.
 
-**Inventory fields are admin-only.** The `inventory` block is never returned by any store-facing API route. It is safe to include consignor pricing and cost details without risk of exposure.
+**Products default to `draft`.** Set `"status": "published"` to make them live immediately.
 
-**Bulk imports process sequentially.** Items are processed one at a time to avoid duplicate-handle collisions. For large catalogs, expect roughly 1-2 seconds per product.
+**Inventory and serial number fields are admin-only.** The `inventory` block and `details.serial_number` are never returned by any public or store-facing API route.
 
-**Images must be uploaded before import.** The import API accepts URLs only — it does not accept file uploads directly. Use the automated script above or upload images manually via the admin Media tab first.
+**Specs and In The Box tabs hide when empty.** The store specs endpoint returns `null` when no specs are set. The storefront uses this to show or hide the Specifications tab. Same for the In The Box tab.
 
-**Specs are combined automatically — don't set them twice.** The store specs endpoint (`GET /store/products/:id/specs`) combines data from three sources: (1) product_attributes (Caliber, Action, Barrel Length, Capacity, Frame Color), (2) product_specs (Overall Length, Weight, Frame Material, Grips, Sights, Finish), and (3) `extra_specs` (any additional rows). Set each value in its appropriate place — they merge automatically on the storefront.
+**Don't set filterable specs twice.** Caliber, Action, Barrel Length, Capacity, and Frame Color auto-populate the spec table from the `attributes` block. Only use `extra_specs` for rows not covered by `specs` or `attributes`.
 
-**Specs and In The Box tabs hide when empty.** The store specs endpoint returns `null` when no specs are set; the store attributes endpoint returns an empty array when none are assigned. The storefront uses these to show or hide the tabs. If you want a tab hidden, simply don't set any data for it.
+**Bulk imports process sequentially.** Items are processed one at a time to avoid duplicate-handle collisions. Expect roughly 1–2 seconds per product for large catalogs.
 
-**Categories and collections must exist first.** Create them in Medusa Admin (Settings → Categories, Products → Collections) before running an import that references them. Unknown handles are reported as warnings in the import response but do not fail the import.
+**Images must be hosted URLs.** The import endpoint accepts URLs only, not file uploads. Use the automated script above to upload from local files first.
