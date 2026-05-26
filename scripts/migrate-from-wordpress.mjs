@@ -41,7 +41,7 @@ async function fetchAllPosts() {
   while (true) {
     const res = await fetch(
       `${WP_URL}/wp-json/wp/v2/posts?per_page=100&page=${page}&status=publish` +
-      `&_fields=id,slug,title,content,excerpt,date,featured_media,categories,author&_embed`
+      `&_fields=id,slug,title,content,excerpt,date,featured_media,categories,tags,author&_embed`
     )
     if (!res.ok) break
     const batch = await res.json()
@@ -57,6 +57,20 @@ async function fetchAllPosts() {
 async function fetchCategoryMap() {
   const cats = await wpGet('/categories?per_page=100&_fields=id,name')
   return Object.fromEntries(cats.map(c => [c.id, c.name]))
+}
+
+async function fetchTagMap() {
+  let page = 1
+  const all = []
+  while (true) {
+    const batch = await wpGet(`/tags?per_page=100&page=${page}&_fields=id,name`)
+    if (!batch.length) break
+    all.push(...batch)
+    // WP returns fewer than 100 when on the last page
+    if (batch.length < 100) break
+    page++
+  }
+  return Object.fromEntries(all.map(t => [t.id, decodeEntities(t.name)]))
 }
 
 async function fetchMediaUrl(mediaId) {
@@ -328,9 +342,9 @@ async function main() {
   console.log(`  Payload:    ${PAYLOAD_URL}`)
   if (DRY_RUN) console.log(`  DRY RUN — nothing will be written\n`)
 
-  console.log('Fetching WordPress posts...')
-  const [posts, catMap] = await Promise.all([fetchAllPosts(), fetchCategoryMap()])
-  console.log(`Found ${posts.length} published posts\n`)
+  console.log('Fetching WordPress posts, categories, and tags...')
+  const [posts, catMap, tagMap] = await Promise.all([fetchAllPosts(), fetchCategoryMap(), fetchTagMap()])
+  console.log(`Found ${posts.length} published posts, ${Object.keys(tagMap).length} tags\n`)
 
   let imported = 0, skipped = 0, failed = 0
 
@@ -375,8 +389,10 @@ async function main() {
     const wordCount = post.content.rendered.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length
     const readTime = `${Math.max(1, Math.round(wordCount / 200))} min read`
 
+    const tags = (post.tags || []).filter(id => tagMap[id]).map(id => tagMap[id])
+
     if (DRY_RUN) {
-      console.log(`cat="${category}" words=${wordCount} blocks=${content.root.children.length}`)
+      console.log(`cat="${category}" words=${wordCount} blocks=${content.root.children.length} tags=${tags.length}`)
       imported++
       continue
     }
@@ -391,7 +407,7 @@ async function main() {
       readTime,
       author: { name: authorName, role: null, bio: null },
       content,
-      tags: [],
+      tags: tags.map(t => ({ tag: t })),
       ...(featuredImageId && { featuredImage: featuredImageId }),
     }
 
