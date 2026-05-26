@@ -3,7 +3,7 @@
  * Migrate articles from WordPress to Payload CMS
  *
  * Usage:
- *   PAYLOAD_API_KEY=<key> node scripts/migrate-from-wordpress.mjs
+ *   PAYLOAD_EMAIL=you@example.com PAYLOAD_PASSWORD=yourpass node scripts/migrate-from-wordpress.mjs
  *
  * Optional env vars:
  *   WP_URL        WordPress site URL       (default: https://luxus-collection.com)
@@ -13,17 +13,38 @@
 
 const WP_URL      = process.env.WP_URL      || 'https://luxus-collection.com'
 const PAYLOAD_URL = process.env.PAYLOAD_URL  || 'https://api.luxus-collection.com/cms'
-const API_KEY     = process.env.PAYLOAD_API_KEY
 const DRY_RUN     = process.env.DRY_RUN === '1'
 
-if (!API_KEY) {
-  console.error('ERROR: Set PAYLOAD_API_KEY env var before running.')
-  console.error('Create an API key in the Payload admin → your user profile → API Keys.')
+const PAYLOAD_EMAIL    = process.env.PAYLOAD_EMAIL
+const PAYLOAD_PASSWORD = process.env.PAYLOAD_PASSWORD
+
+if (!PAYLOAD_EMAIL || !PAYLOAD_PASSWORD) {
+  console.error('ERROR: Set PAYLOAD_EMAIL and PAYLOAD_PASSWORD before running.')
+  console.error('  PAYLOAD_EMAIL=you@example.com PAYLOAD_PASSWORD=yourpass node scripts/migrate-from-wordpress.mjs')
   process.exit(1)
 }
 
+// Log in and get a JWT token
+console.log('Authenticating with Payload CMS...')
+const loginRes = await fetch(`${PAYLOAD_URL}/api/users/login`, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email: PAYLOAD_EMAIL, password: PAYLOAD_PASSWORD }),
+})
+if (!loginRes.ok) {
+  const err = await loginRes.text()
+  console.error(`ERROR: Payload login failed (${loginRes.status}): ${err}`)
+  process.exit(1)
+}
+const { token } = await loginRes.json()
+if (!token) {
+  console.error('ERROR: Login succeeded but no token returned. Check credentials.')
+  process.exit(1)
+}
+console.log('Authenticated.\n')
+
 const PAYLOAD_HEADERS = {
-  'Authorization': `users API-KEY ${API_KEY}`,
+  'Authorization': `JWT ${token}`,
   'Content-Type': 'application/json',
 }
 
@@ -278,7 +299,7 @@ async function uploadImageToPayload(imageUrl, alt) {
     const res = await fetch(`${PAYLOAD_URL}/api/media`, {
       method: 'POST',
       headers: {
-        'Authorization': `users API-KEY ${API_KEY}`,
+        'Authorization': `JWT ${token}`,
         'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
       body,
