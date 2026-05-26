@@ -15,6 +15,10 @@ const dirname = path.dirname(filename)
 
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || 'https://api.luxus-collection.com/cms',
+  csrf: [
+    'https://api.luxus-collection.com',
+    'https://luxus-collection.com',
+  ],
   admin: {
     user: Users.slug,
     importMap: {
