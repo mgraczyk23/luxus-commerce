@@ -402,14 +402,10 @@ async function main() {
       || stripTags(post.excerpt?.rendered || '').replace(/\[&hellip;\]|\[…\]/g, '').replace(/\s+/g, ' ').trim()
     const excerpt = rawExcerpt || title
 
-    // Featured image: _embed doesn't work in bulk+_fields, so fetch directly if needed
-    const embeddedMedia = post._embedded?.['wp:featuredmedia']?.[0]
-    let featuredMediaInfo = embeddedMedia?.source_url
-      ? { url: embeddedMedia.source_url, alt: embeddedMedia.alt_text || title }
+    // _embed never populates in bulk requests — always fetch media directly
+    const featuredMediaInfo = post.featured_media
+      ? await fetchMediaUrl(post.featured_media)
       : null
-    if (!featuredMediaInfo && post.featured_media) {
-      featuredMediaInfo = await fetchMediaUrl(post.featured_media)
-    }
 
     let featuredImageId = null
     if (!DRY_RUN && featuredMediaInfo) {
