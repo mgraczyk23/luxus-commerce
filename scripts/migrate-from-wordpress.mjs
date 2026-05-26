@@ -41,7 +41,7 @@ async function fetchAllPosts() {
   while (true) {
     const res = await fetch(
       `${WP_URL}/wp-json/wp/v2/posts?per_page=100&page=${page}&status=publish` +
-      `&_fields=id,slug,title,content,excerpt,date,featured_media,categories,tags,author&_embed`
+      `&_fields=id,slug,title,content,excerpt,date,featured_media,categories,tags,author,yoast_head_json,_embedded&_embed`
     )
     if (!res.ok) break
     const batch = await res.json()
@@ -52,6 +52,16 @@ async function fetchAllPosts() {
     page++
   }
   return all
+}
+
+async function fetchMediaUrl(mediaId) {
+  if (!mediaId) return null
+  try {
+    const media = await wpGet(`/media/${mediaId}?_fields=source_url,alt_text`)
+    return { url: media.source_url, alt: media.alt_text || '' }
+  } catch {
+    return null
+  }
 }
 
 async function fetchCategoryMap() {
@@ -73,15 +83,6 @@ async function fetchTagMap() {
   return Object.fromEntries(all.map(t => [t.id, decodeEntities(t.name)]))
 }
 
-async function fetchMediaUrl(mediaId) {
-  if (!mediaId) return null
-  try {
-    const media = await wpGet(`/media/${mediaId}?_fields=source_url,mime_type`)
-    return { url: media.source_url, mime: media.mime_type }
-  } catch {
-    return null
-  }
-}
 
 /* ── HTML → Lexical JSON converter ─────────────────────────────────────── */
 
@@ -368,18 +369,29 @@ async function main() {
     // Author
     const authorName = post._embedded?.author?.[0]?.name || 'Luxus Collection'
 
-    // Excerpt
-    const excerpt = stripTags(post.excerpt?.rendered || '')
-      .replace(/\[&hellip;\]|\[…\]/g, '').replace(/\s+/g, ' ').trim()
+    // Yoast SEO fields
+    const yoast = post.yoast_head_json || {}
+    const seoTitle       = yoast.title       || null
+    const seoDescription = yoast.description || null
 
-    // Featured image upload
+    // Excerpt: prefer Yoast OG description, fall back to WP excerpt
+    const rawExcerpt = seoDescription
+      || stripTags(post.excerpt?.rendered || '').replace(/\[&hellip;\]|\[…\]/g, '').replace(/\s+/g, ' ').trim()
+    const excerpt = rawExcerpt || title
+
+    // Featured image: _embed doesn't work in bulk+_fields, so fetch directly if needed
+    const embeddedMedia = post._embedded?.['wp:featuredmedia']?.[0]
+    let featuredMediaInfo = embeddedMedia?.source_url
+      ? { url: embeddedMedia.source_url, alt: embeddedMedia.alt_text || title }
+      : null
+    if (!featuredMediaInfo && post.featured_media) {
+      featuredMediaInfo = await fetchMediaUrl(post.featured_media)
+    }
+
     let featuredImageId = null
-    if (!DRY_RUN && post.featured_media) {
-      const media = await fetchMediaUrl(post.featured_media)
-      if (media) {
-        process.stdout.write('[img] ')
-        featuredImageId = await uploadImageToPayload(media.url, title)
-      }
+    if (!DRY_RUN && featuredMediaInfo) {
+      process.stdout.write('[img] ')
+      featuredImageId = await uploadImageToPayload(featuredMediaInfo.url, featuredMediaInfo.alt || title)
     }
 
     // Convert HTML → Lexical
@@ -391,8 +403,10 @@ async function main() {
 
     const tags = (post.tags || []).filter(id => tagMap[id]).map(id => tagMap[id])
 
+    const hasImg = !!featuredMediaInfo
+
     if (DRY_RUN) {
-      console.log(`cat="${category}" words=${wordCount} blocks=${content.root.children.length} tags=${tags.length}`)
+      console.log(`cat="${category}" tags=${tags.length} img=${hasImg} seo=${!!seoTitle}`)
       imported++
       continue
     }
@@ -403,17 +417,19 @@ async function main() {
       status: 'published',
       publishedAt: post.date,
       category,
-      excerpt: excerpt || title,
+      excerpt,
       readTime,
       author: { name: authorName, role: null, bio: null },
       content,
       tags: tags.map(t => ({ tag: t })),
+      seoTitle,
+      seoDescription,
       ...(featuredImageId && { featuredImage: featuredImageId }),
     }
 
     try {
       await payloadPost('/posts', body)
-      console.log(`OK  cat="${category}" ${readTime}`)
+      console.log(`OK  cat="${category}" ${readTime}${featuredImageId ? ' +img' : ''}${seoTitle ? ' +seo' : ''}`)
       imported++
     } catch (err) {
       console.log(`FAIL ${err.message.slice(0, 70)}`)
