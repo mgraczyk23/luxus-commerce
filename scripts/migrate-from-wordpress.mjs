@@ -283,18 +283,20 @@ async function uploadImageToPayload(imageUrl, alt) {
     const buffer = Buffer.from(await imgRes.arrayBuffer())
     const filename = imageUrl.split('/').pop().split('?')[0]
 
-    // Use multipart form — build manually without external deps
+    // Payload v3 REST upload: file part + _payload JSON blob
     const boundary = `----FormBoundary${Math.random().toString(36).slice(2)}`
     const mimeType = filename.match(/\.png$/i) ? 'image/png' : filename.match(/\.gif$/i) ? 'image/gif' : filename.match(/\.webp$/i) ? 'image/webp' : 'image/jpeg'
+    const altText = alt || filename.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')
+    const payloadJson = JSON.stringify({ alt: altText })
 
-    const header = Buffer.from(
+    const filePart = Buffer.from(
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${mimeType}\r\n\r\n`
     )
-    const altPart = Buffer.from(
-      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="alt"\r\n\r\n${alt || filename.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ')}`
+    const metaPart = Buffer.from(
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="_payload"\r\nContent-Type: application/json\r\n\r\n${payloadJson}`
     )
     const footer = Buffer.from(`\r\n--${boundary}--`)
-    const body = Buffer.concat([header, buffer, altPart, footer])
+    const body = Buffer.concat([filePart, buffer, metaPart, footer])
 
     const res = await fetch(`${PAYLOAD_URL}/api/media`, {
       method: 'POST',
@@ -305,7 +307,7 @@ async function uploadImageToPayload(imageUrl, alt) {
       body,
     })
     const json = await res.json()
-    if (!res.ok) { console.warn(`  ⚠ Media upload failed: ${json.message || res.status}`); return null }
+    if (!res.ok) { console.warn(`  ⚠ Media upload failed: ${JSON.stringify(json.errors ?? json.message ?? res.status)}`); return null }
     return json.doc?.id ?? json.id ?? null
   } catch (err) {
     console.warn(`  ⚠ Media upload error: ${err.message}`)
