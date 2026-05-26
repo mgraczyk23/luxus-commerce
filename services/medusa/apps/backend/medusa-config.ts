@@ -52,5 +52,8 @@ export default defineConfig({
     {
       resolve: "./src/modules/auction",
     },
+    {
+      resolve: "./src/modules/offers",
+    },
   ],
 })
