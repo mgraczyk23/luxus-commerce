@@ -1,6 +1,8 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { OFFERS_MODULE } from "../../../modules/offers"
 import OffersService from "../../../modules/offers/service"
+import { sendEmail } from "../../../lib/email"
+import { newOfferAdminEmail } from "../../../lib/email-templates"
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const service = req.scope.resolve(OFFERS_MODULE) as InstanceType<typeof OffersService>
@@ -41,6 +43,29 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     status:       "pending",
     expires_at,
   })
+
+  // Notify admin — fire and forget, don't fail the request if email fails
+  try {
+    const adminEmail = process.env.ADMIN_EMAIL
+    const adminUrl   = process.env.ADMIN_URL ?? "https://admin.luxus-collection.com"
+    if (adminEmail) {
+      const { subject, html } = newOfferAdminEmail({
+        productTitle:  product_title,
+        productHandle: product_handle,
+        buyerName:     [first_name, last_name].filter(Boolean).join(" "),
+        buyerEmail:    email,
+        buyerPhone:    phone ?? null,
+        offerAmount:   offer_amount,
+        listedPrice:   null,
+        message:       message ?? null,
+        adminUrl,
+        productId:     product_id,
+      })
+      await sendEmail({ to: adminEmail, subject, html, replyTo: email })
+    }
+  } catch (err) {
+    console.error("[offers] admin email failed:", err)
+  }
 
   return res.status(201).json({ offer })
 }

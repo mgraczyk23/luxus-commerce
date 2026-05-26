@@ -1,6 +1,12 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { OFFERS_MODULE } from "../../../../modules/offers"
 import OffersService from "../../../../modules/offers/service"
+import { sendEmail } from "../../../../lib/email"
+import {
+  offerAcceptedEmail,
+  offerRejectedEmail,
+  offerCounteredEmail,
+} from "../../../../lib/email-templates"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const service  = req.scope.resolve(OFFERS_MODULE) as InstanceType<typeof OffersService>
@@ -39,5 +45,47 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
   }
 
   const offer = await service.updateOffers({ id }, updates)
+
+  // Send customer notification — fire and forget
+  if (status) {
+    try {
+      const storefrontUrl = process.env.STOREFRONT_URL ?? "https://luxus-collection.com"
+      let emailPayload: { subject: string; html: string } | null = null
+
+      if (status === "accepted") {
+        emailPayload = offerAcceptedEmail({
+          productTitle:   offer.product_title,
+          productHandle:  offer.product_handle,
+          buyerFirstName: offer.first_name,
+          offerAmount:    offer.offer_amount,
+          storefrontUrl,
+        })
+      } else if (status === "rejected") {
+        emailPayload = offerRejectedEmail({
+          productTitle:   offer.product_title,
+          productHandle:  offer.product_handle,
+          buyerFirstName: offer.first_name,
+          offerAmount:    offer.offer_amount,
+          storefrontUrl,
+        })
+      } else if (status === "countered" && counter_amount) {
+        emailPayload = offerCounteredEmail({
+          productTitle:   offer.product_title,
+          productHandle:  offer.product_handle,
+          buyerFirstName: offer.first_name,
+          originalAmount: offer.offer_amount,
+          counterAmount:  counter_amount,
+          storefrontUrl,
+        })
+      }
+
+      if (emailPayload) {
+        await sendEmail({ to: offer.email, ...emailPayload })
+      }
+    } catch (err) {
+      console.error("[offers] customer email failed:", err)
+    }
+  }
+
   return res.json({ offer })
 }
