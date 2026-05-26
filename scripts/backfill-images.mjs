@@ -107,7 +107,7 @@ let page = 1
 const missing = []
 while (true) {
   const result = await payloadGet(
-    `/posts?where[featuredImage][exists]=false&limit=100&page=${page}&select=id,slug,title`
+    `/posts?where[featuredImage][exists]=false&limit=100&page=${page}&depth=0`
   )
   missing.push(...(result.docs ?? []))
   if (!result.hasNextPage) break
