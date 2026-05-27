@@ -11,7 +11,10 @@ import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { Comments } from './collections/Comments'
 import { Subscribers } from './collections/Subscribers'
+import { Brands } from './collections/Brands'
 import { SiteSettings } from './globals/SiteSettings'
+import { HeroSlides } from './globals/HeroSlides'
+import { AboutPage } from './globals/AboutPage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -36,8 +39,8 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts, Comments, Subscribers],
-  globals: [SiteSettings],
+  collections: [Users, Media, Posts, Comments, Subscribers, Brands],
+  globals: [SiteSettings, HeroSlides, AboutPage],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -54,6 +57,11 @@ export default buildConfig({
       collections: {
         media: {
           prefix: 'cms',
+          generateFileURL: ({ filename, prefix }) => {
+            const bucket = process.env.S3_BUCKET || 'luxus-collection-media'
+            const region = process.env.S3_REGION || 'us-east-1'
+            return `https://${bucket}.s3.${region}.amazonaws.com/${prefix}/${filename}`
+          },
         },
       },
       bucket: process.env.S3_BUCKET || '',
