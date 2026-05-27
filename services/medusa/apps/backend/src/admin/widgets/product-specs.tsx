@@ -40,7 +40,7 @@ const ProductSpecsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
   }, [data.id])
 
   const set = (field: keyof ProductSpec, value: string) =>
-    setSpec((prev) => ({ ...prev, [field]: value }))
+    setSpec((prev) => ({ ...prev, [field]: value === "" ? null : value }))
 
   const handleSave = async () => {
     setSaving(true)

@@ -45,12 +45,19 @@ export async function PUT(req: MedusaRequest, res: MedusaResponse) {
     fields: ["id", "inventory_info.id"],
   })
 
-  const existing = data[0]?.inventory_info as any
+  const raw = data[0]?.inventory_info as any
+  const existing = Array.isArray(raw) ? raw[0] : raw
   if (!existing) {
     return res.status(404).json({ message: "Inventory info not found" })
   }
 
-  const updated = await (service as any).updateInventoryInfos({ id: existing.id }, req.body as any)
+  // Strip managed fields — timestamps cause MikroORM to silently abort the update
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id: _id, created_at: _c, updated_at: _u, deleted_at: _d, ...updateData } = req.body as any
+
+  // Array-with-id form is required — selector+data form silently no-ops in this Medusa version
+  const result = await (service as any).updateInventoryInfos([{ id: existing.id, ...updateData }])
+  const updated = Array.isArray(result) ? result[0] : result
 
   res.json({ inventory_info: updated })
 }

@@ -303,10 +303,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   // Build attribute lookup table once for all items
   const [allTypes, allValues, allCategories, allCollections] = await Promise.all([
-    attrService.listAttributeTypes({}),
-    attrService.listAttributeValues({}),
-    productService.listProductCategories({}),
-    productService.listProductCollections({}),
+    attrService.listAttributeTypes({}, { take: 1000 }),
+    attrService.listAttributeValues({}, { take: 1000 }),
+    productService.listProductCategories({}, { take: 1000 }),
+    productService.listProductCollections({}, { take: 1000 }),
   ])
 
   const attrLookup: Record<string, Record<string, string>> = {}

@@ -17,11 +17,29 @@ function importApiKeyMiddleware(req: MedusaRequest, res: MedusaResponse, next: M
   next()
 }
 
+function storefrontRevalidateMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
+  const url = process.env.STOREFRONT_URL
+  const secret = process.env.REVALIDATE_SECRET
+  if (url && secret) {
+    res.on("finish", () => {
+      if (res.statusCode < 400) {
+        fetch(`${url}/api/revalidate?secret=${secret}`, { method: "POST" }).catch(() => {})
+      }
+    })
+  }
+  next()
+}
+
 export default defineMiddlewares({
   routes: [
     {
       matcher: "/import/*",
       middlewares: [importApiKeyMiddleware],
+    },
+    {
+      matcher: "/admin/products*",
+      methods: ["POST", "PUT", "DELETE"],
+      middlewares: [storefrontRevalidateMiddleware],
     },
   ],
 })
