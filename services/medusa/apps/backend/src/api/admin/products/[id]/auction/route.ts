@@ -1,6 +1,7 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { AUCTION_MODULE } from "../../../../../modules/auction"
+import AuctionService from "../../../../../modules/auction/service"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
@@ -21,7 +22,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
-  const service = req.scope.resolve(AUCTION_MODULE)
+  const service = req.scope.resolve(AUCTION_MODULE) as InstanceType<typeof AuctionService>
   const link = req.scope.resolve(ContainerRegistrationKeys.LINK)
 
   const listing = await service.createAuctionListings(req.body as any)
@@ -36,7 +37,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
 export async function PUT(req: MedusaRequest, res: MedusaResponse) {
   const { id } = req.params
-  const service = req.scope.resolve(AUCTION_MODULE)
+  const service = req.scope.resolve(AUCTION_MODULE) as InstanceType<typeof AuctionService>
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
 
   const { data } = await query.graph({

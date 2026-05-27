@@ -56,7 +56,7 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Product not found" })
   }
 
-  res.json({ attribute_values: data[0].attribute_values ?? [] })
+  res.json({ attribute_values: (data[0] as any).attribute_values ?? [] })
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
