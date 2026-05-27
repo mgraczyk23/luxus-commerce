@@ -9,6 +9,7 @@ import sharp from 'sharp'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
+import { Comments } from './collections/Comments'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -19,6 +20,11 @@ export default buildConfig({
     'https://api.luxus-collection.com',
     'https://luxus-collection.com',
   ],
+  cors: [
+    'https://luxus-collection.com',
+    'https://dev.luxus-collection.com',
+    'https://api.luxus-collection.com',
+  ],
   admin: {
     user: Users.slug,
     importMap: {
@@ -28,7 +34,7 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts],
+  collections: [Users, Media, Posts, Comments],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
