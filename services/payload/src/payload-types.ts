@@ -70,6 +70,8 @@ export interface Config {
     users: User;
     media: Media;
     posts: Post;
+    comments: Comment;
+    subscribers: Subscriber;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -80,6 +82,8 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     posts: PostsSelect<false> | PostsSelect<true>;
+    comments: CommentsSelect<false> | CommentsSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -155,7 +159,8 @@ export interface User {
  */
 export interface Media {
   id: number;
-  alt: string;
+  alt?: string | null;
+  prefix?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -250,6 +255,44 @@ export interface Post {
   createdAt: string;
 }
 /**
+ * Reader comments — set status to Approved to publish, Rejected to discard.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments".
+ */
+export interface Comment {
+  id: number;
+  post: number | Post;
+  status: 'pending' | 'approved' | 'rejected';
+  authorName: string;
+  /**
+   * Not displayed publicly.
+   */
+  authorEmail: string;
+  body: string;
+  honeypot?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Newsletter subscribers — active subscribers are notified when a new article is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  email: string;
+  name?: string | null;
+  status: 'active' | 'unsubscribed';
+  /**
+   * e.g. article slug or "homepage"
+   */
+  source?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -284,6 +327,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'posts';
         value: number | Post;
+      } | null)
+    | ({
+        relationTo: 'comments';
+        value: number | Comment;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -360,6 +411,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  prefix?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -402,6 +454,32 @@ export interface PostsSelect<T extends boolean = true> {
   content?: T;
   seoTitle?: T;
   seoDescription?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "comments_select".
+ */
+export interface CommentsSelect<T extends boolean = true> {
+  post?: T;
+  status?: T;
+  authorName?: T;
+  authorEmail?: T;
+  body?: T;
+  honeypot?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  email?: T;
+  name?: T;
+  status?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }

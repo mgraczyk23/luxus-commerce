@@ -10,6 +10,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { Comments } from './collections/Comments'
+import { Subscribers } from './collections/Subscribers'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -34,7 +35,7 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts, Comments],
+  collections: [Users, Media, Posts, Comments, Subscribers],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
