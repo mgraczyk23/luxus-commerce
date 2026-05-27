@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { Posts } from './collections/Posts'
 import { Comments } from './collections/Comments'
 import { Subscribers } from './collections/Subscribers'
+import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -36,6 +37,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Posts, Comments, Subscribers],
+  globals: [SiteSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

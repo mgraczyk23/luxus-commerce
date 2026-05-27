@@ -93,8 +93,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -522,6 +526,112 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Global site settings — edit once, updates everywhere. Save to publish instantly.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  contact?: {
+    phone?: string | null;
+    phoneTollFree?: string | null;
+    emailInfo?: string | null;
+    emailSupport?: string | null;
+    emailSales?: string | null;
+    emailPress?: string | null;
+  };
+  address?: {
+    line1?: string | null;
+    city?: string | null;
+    state?: string | null;
+    zip?: string | null;
+  };
+  hours?: {
+    weekdayOpen?: string | null;
+    weekdayClose?: string | null;
+    saturdayOpen?: string | null;
+    saturdayClose?: string | null;
+    timezone?: string | null;
+    sundayClosed?: boolean | null;
+  };
+  /**
+   * Leave blank to hide from the site.
+   */
+  social?: {
+    facebook?: string | null;
+    instagram?: string | null;
+    linkedin?: string | null;
+    twitter?: string | null;
+    youtube?: string | null;
+    pinterest?: string | null;
+  };
+  /**
+   * Appears at the top of every page when enabled.
+   */
+  announcement?: {
+    enabled?: boolean | null;
+    message?: string | null;
+    link?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  contact?:
+    | T
+    | {
+        phone?: T;
+        phoneTollFree?: T;
+        emailInfo?: T;
+        emailSupport?: T;
+        emailSales?: T;
+        emailPress?: T;
+      };
+  address?:
+    | T
+    | {
+        line1?: T;
+        city?: T;
+        state?: T;
+        zip?: T;
+      };
+  hours?:
+    | T
+    | {
+        weekdayOpen?: T;
+        weekdayClose?: T;
+        saturdayOpen?: T;
+        saturdayClose?: T;
+        timezone?: T;
+        sundayClosed?: T;
+      };
+  social?:
+    | T
+    | {
+        facebook?: T;
+        instagram?: T;
+        linkedin?: T;
+        twitter?: T;
+        youtube?: T;
+        pinterest?: T;
+      };
+  announcement?:
+    | T
+    | {
+        enabled?: T;
+        message?: T;
+        link?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
