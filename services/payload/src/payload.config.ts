@@ -15,6 +15,7 @@ import { Brands } from './collections/Brands'
 import { SiteSettings } from './globals/SiteSettings'
 import { HeroSlides } from './globals/HeroSlides'
 import { AboutPage } from './globals/AboutPage'
+import { ShopTileImages } from './globals/ShopTileImages'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -40,7 +41,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Posts, Comments, Subscribers, Brands],
-  globals: [SiteSettings, HeroSlides, AboutPage],
+  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
