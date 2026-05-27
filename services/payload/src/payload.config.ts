@@ -16,6 +16,9 @@ import { SiteSettings } from './globals/SiteSettings'
 import { HeroSlides } from './globals/HeroSlides'
 import { AboutPage } from './globals/AboutPage'
 import { ShopTileImages } from './globals/ShopTileImages'
+import { ShippingPolicy } from './globals/ShippingPolicy'
+import { PrivacyPolicy } from './globals/PrivacyPolicy'
+import { TermsPolicy } from './globals/TermsPolicy'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,7 +44,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Posts, Comments, Subscribers, Brands],
-  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages],
+  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

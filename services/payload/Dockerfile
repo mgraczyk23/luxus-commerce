@@ -4,7 +4,7 @@ COPY package.json ./
 RUN npm install
 COPY . .
 RUN npm run generate:importmap
-RUN npm run build
+RUN rm -f .next/lock && npm run build
 
 FROM node:20-alpine
 WORKDIR /app
