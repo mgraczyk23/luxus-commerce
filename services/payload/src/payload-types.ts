@@ -569,6 +569,18 @@ export interface SiteSetting {
     pinterest?: string | null;
   };
   /**
+   * Shown on invoices and order confirmations. All fields are optional — leave blank to hide a row.
+   */
+  banking?: {
+    bankName?: string | null;
+    accountName?: string | null;
+    routingNumber?: string | null;
+    accountNumber?: string | null;
+    swiftCode?: string | null;
+    location?: string | null;
+    memo?: string | null;
+  };
+  /**
    * Appears at the top of every page when enabled.
    */
   announcement?: {
@@ -621,6 +633,17 @@ export interface SiteSettingsSelect<T extends boolean = true> {
         twitter?: T;
         youtube?: T;
         pinterest?: T;
+      };
+  banking?:
+    | T
+    | {
+        bankName?: T;
+        accountName?: T;
+        routingNumber?: T;
+        accountNumber?: T;
+        swiftCode?: T;
+        location?: T;
+        memo?: T;
       };
   announcement?:
     | T

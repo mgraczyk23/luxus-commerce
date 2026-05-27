@@ -72,6 +72,21 @@ export const SiteSettings: GlobalConfig = {
       ],
     },
     {
+      name: 'banking',
+      type: 'group',
+      label: 'Wire Transfer / Banking',
+      admin: { description: 'Shown on invoices and order confirmations. All fields are optional — leave blank to hide a row.' },
+      fields: [
+        { name: 'bankName',      type: 'text', label: 'Bank Name',           defaultValue: 'Truist Bank' },
+        { name: 'accountName',   type: 'text', label: 'Account / Credit To', defaultValue: 'Luxus Capital, LLC' },
+        { name: 'routingNumber', type: 'text', label: 'ABA Routing Number',  defaultValue: '263191387' },
+        { name: 'accountNumber', type: 'text', label: 'Account Number',      defaultValue: '1100009085694' },
+        { name: 'swiftCode',     type: 'text', label: 'SWIFT / BIC (international, optional)' },
+        { name: 'location',      type: 'text', label: 'Bank Location',       defaultValue: 'Sarasota, FL' },
+        { name: 'memo',          type: 'text', label: 'Payment Memo / Reference (optional)' },
+      ],
+    },
+    {
       name: 'announcement',
       type: 'group',
       label: 'Announcement Bar',
