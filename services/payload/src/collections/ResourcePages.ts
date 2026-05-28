@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { lexicalEditor, BlocksFeature } from '@payloadcms/richtext-lexical'
 
 const revalidate = async (tag: string) => {
   const storefrontUrl = process.env.STOREFRONT_URL ?? 'https://luxus-collection.com'
@@ -6,6 +7,24 @@ const revalidate = async (tag: string) => {
   if (!secret) return
   await fetch(`${storefrontUrl}/api/revalidate?tag=${tag}&secret=${encodeURIComponent(secret)}`).catch(() => {})
 }
+
+// ─── Shared spec-row fields ────────────────────────────────────────────────
+const specEntryFields = [
+  {
+    name: 'label',
+    type: 'text' as const,
+    label: 'Field',
+    required: true,
+    admin: { placeholder: 'e.g. "Caliber"' },
+  },
+  {
+    name: 'value',
+    type: 'text' as const,
+    label: 'Value',
+    required: true,
+    admin: { placeholder: 'e.g. "9×19mm Parabellum"' },
+  },
+]
 
 export const ResourcePages: CollectionConfig = {
   slug: 'resource-pages',
@@ -144,17 +163,151 @@ export const ResourcePages: CollectionConfig = {
       type: 'richText',
       label: 'Article Content',
       admin: {
-        description: 'Main body. Use headings, paragraphs, blockquotes, lists, and embedded images. Write as long or as detailed as needed.',
+        description: 'Main body. Use headings, paragraphs, blockquotes, lists, and the Insert menu to add Spec Tables, Feature Boxes, or Two-Column sections anywhere in the flow.',
       },
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) => [
+          ...defaultFeatures,
+          BlocksFeature({
+            blocks: [
+              // ── Inline Spec Table ─────────────────────────────────────────
+              {
+                slug: 'specBlock',
+                labels: {
+                  singular: 'Spec Table',
+                  plural:   'Spec Tables',
+                },
+                fields: [
+                  {
+                    name: 'heading',
+                    type: 'text',
+                    label: 'Table Heading',
+                    admin: { placeholder: 'e.g. "P226 Standard — Specifications"' },
+                  },
+                  {
+                    name: 'note',
+                    type: 'textarea',
+                    label: 'Note (optional)',
+                    admin: {
+                      rows: 2,
+                      description: 'Short context paragraph shown above the rows.',
+                    },
+                  },
+                  {
+                    name: 'entries',
+                    type: 'array',
+                    label: 'Rows',
+                    admin: { description: 'Add one row per spec. Use as many as needed.' },
+                    fields: specEntryFields,
+                  },
+                ],
+              },
+
+              // ── Feature / Callout Box ─────────────────────────────────────
+              {
+                slug: 'featureBox',
+                labels: {
+                  singular: 'Feature / Callout Box',
+                  plural:   'Feature / Callout Boxes',
+                },
+                fields: [
+                  {
+                    name: 'style',
+                    type: 'select',
+                    label: 'Box Style',
+                    defaultValue: 'features',
+                    options: [
+                      { label: 'Feature List  (gold border, bullet points)', value: 'features' },
+                      { label: 'Info / Note   (neutral, grey border)',        value: 'note'     },
+                      { label: 'Callout       (dark background, gold text)',  value: 'callout'  },
+                    ],
+                  },
+                  {
+                    name: 'heading',
+                    type: 'text',
+                    label: 'Heading (optional)',
+                    admin: { placeholder: 'e.g. "Key Features" or "Did You Know?"' },
+                  },
+                  {
+                    name: 'items',
+                    type: 'array',
+                    label: 'Items',
+                    admin: { description: 'Each item appears as one bullet point.' },
+                    fields: [
+                      {
+                        name: 'text',
+                        type: 'text',
+                        label: 'Item',
+                        required: true,
+                        admin: { placeholder: 'e.g. "First firearm to use stainless steel slide"' },
+                      },
+                    ],
+                  },
+                ],
+              },
+
+              // ── Two-Column: Text + Spec Table ─────────────────────────────
+              {
+                slug: 'twoColumnSpec',
+                labels: {
+                  singular: 'Two Column (Text + Spec)',
+                  plural:   'Two Column Sections',
+                },
+                fields: [
+                  {
+                    name: 'ratio',
+                    type: 'select',
+                    label: 'Column Ratio',
+                    defaultValue: '50-50',
+                    options: [
+                      { label: '50 / 50  (equal columns)', value: '50-50'  },
+                      { label: '60 Left / 40 Right',       value: '60-40'  },
+                      { label: '40 Left / 60 Right',       value: '40-60'  },
+                    ],
+                  },
+                  {
+                    name: 'leftText',
+                    type: 'textarea',
+                    label: 'Left Column — Text',
+                    admin: {
+                      rows: 8,
+                      description: 'Descriptive copy. Separate paragraphs with a blank line.',
+                      placeholder: 'Write the context or narrative for this section here…',
+                    },
+                  },
+                  {
+                    name: 'rightHeading',
+                    type: 'text',
+                    label: 'Right Column — Table Heading',
+                    admin: { placeholder: 'e.g. "Technical Specifications"' },
+                  },
+                  {
+                    name: 'rightNote',
+                    type: 'textarea',
+                    label: 'Right Column — Note (optional)',
+                    admin: { rows: 2, description: 'Short note shown above the spec rows on the right.' },
+                  },
+                  {
+                    name: 'rightEntries',
+                    type: 'array',
+                    label: 'Right Column — Spec Rows',
+                    fields: specEntryFields,
+                  },
+                ],
+              },
+            ],
+          }),
+        ],
+      }),
     },
 
-    // ─── Specification Tables ─────────────────────────────────────────────────
+    // ─── Specification Tables (standalone, always at bottom) ──────────────────
     {
       name: 'specs',
       type: 'array',
-      label: 'Specification Tables',
+      label: 'Specification Tables (Bottom)',
       admin: {
-        description: 'Add one entry per spec group (e.g. one per model variant). Each group shows as a labeled specification table on the page.',
+        description: 'These tables always render at the bottom of the page in a "Technical Data" section. Use the inline Spec Table block inside the content editor instead if you want tables positioned within the article.',
         initCollapsed: true,
       },
       fields: [
@@ -163,7 +316,7 @@ export const ResourcePages: CollectionConfig = {
           type: 'text',
           label: 'Table Heading',
           admin: {
-            description: 'Names this spec group. E.g. "P226 Standard" or "P226 Navy Model Specifications".',
+            description: 'Names this spec group.',
             placeholder: 'e.g. "Standard Model Specifications"',
           },
         },
@@ -180,25 +333,7 @@ export const ResourcePages: CollectionConfig = {
           name: 'entries',
           type: 'array',
           label: 'Specification Rows',
-          admin: {
-            description: 'Each row is one label/value pair. Add as many as needed.',
-          },
-          fields: [
-            {
-              name: 'label',
-              type: 'text',
-              label: 'Field',
-              required: true,
-              admin: { placeholder: 'e.g. "Caliber"' },
-            },
-            {
-              name: 'value',
-              type: 'text',
-              label: 'Value',
-              required: true,
-              admin: { placeholder: 'e.g. "9×19mm Parabellum"' },
-            },
-          ],
+          fields: specEntryFields,
         },
       ],
     },
