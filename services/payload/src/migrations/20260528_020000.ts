@@ -61,11 +61,19 @@ export async function up({ db }: MigrateUpArgs): Promise<void> {
     CREATE INDEX IF NOT EXISTS "resource_pages_specs_parent_idx" ON "resource_pages_specs" ("_parent_id");
     CREATE INDEX IF NOT EXISTS "resource_pages_specs_entries_order_idx" ON "resource_pages_specs_entries" ("_order");
     CREATE INDEX IF NOT EXISTS "resource_pages_specs_entries_parent_idx" ON "resource_pages_specs_entries" ("_parent_id");
+
+    -- Payload document-locking: register resource_pages as a lockable collection
+    ALTER TABLE "payload_locked_documents_rels"
+      ADD COLUMN IF NOT EXISTS "resource_pages_id" integer
+        REFERENCES "resource_pages"("id") ON DELETE CASCADE;
+    CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_resource_pages_id_idx"
+      ON "payload_locked_documents_rels" ("resource_pages_id");
   `)
 }
 
 export async function down({ db }: MigrateDownArgs): Promise<void> {
   await db.execute(sql`
+    ALTER TABLE "payload_locked_documents_rels" DROP COLUMN IF EXISTS "resource_pages_id";
     DROP TABLE IF EXISTS "resource_pages_specs_entries";
     DROP TABLE IF EXISTS "resource_pages_specs";
     DROP TABLE IF EXISTS "resource_pages";
