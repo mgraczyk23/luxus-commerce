@@ -73,6 +73,7 @@ export interface Config {
     comments: Comment;
     subscribers: Subscriber;
     brands: Brand;
+    'resource-pages': ResourcePage;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +87,7 @@ export interface Config {
     comments: CommentsSelect<false> | CommentsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     brands: BrandsSelect<false> | BrandsSelect<true>;
+    'resource-pages': ResourcePagesSelect<false> | ResourcePagesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -383,6 +385,68 @@ export interface BrandsSelect<T extends boolean = true> {
   sortOrder?: T;
   seoTitle?: T;
   seoDescription?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resource-pages".
+ */
+export interface ResourcePage {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt?: string | null;
+  featuredImage?: (number | null) | Media;
+  brand: number | Brand;
+  status: 'draft' | 'published';
+  sortOrder?: number | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  content?: {
+    root: {
+      type: string;
+      children: { type: any; version: number; [k: string]: unknown }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  specs?:
+    | {
+        heading?: string | null;
+        note?: string | null;
+        entries?:
+          | {
+              label: string;
+              value: string;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "resource-pages_select".
+ */
+export interface ResourcePagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  excerpt?: T;
+  featuredImage?: T;
+  brand?: T;
+  status?: T;
+  sortOrder?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  content?: T;
+  specs?: T | { heading?: T; note?: T; entries?: T | { label?: T; value?: T; id?: T }; id?: T };
   updatedAt?: T;
   createdAt?: T;
 }
