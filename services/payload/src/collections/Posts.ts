@@ -128,6 +128,16 @@ export const Posts: CollectionConfig = {
       },
     },
     {
+      name: 'brand',
+      type: 'relationship',
+      relationTo: 'brands',
+      hasMany: false,
+      admin: {
+        position: 'sidebar',
+        description: 'Associate this article with a manufacturer. It will appear in the "Articles & Resources" section on the brand hub page.',
+      },
+    },
+    {
       name: 'tags',
       type: 'array',
       admin: {

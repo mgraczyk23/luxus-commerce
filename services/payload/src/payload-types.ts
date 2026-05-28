@@ -72,6 +72,7 @@ export interface Config {
     posts: Post;
     comments: Comment;
     subscribers: Subscriber;
+    brands: Brand;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     posts: PostsSelect<false> | PostsSelect<true>;
     comments: CommentsSelect<false> | CommentsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    brands: BrandsSelect<false> | BrandsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -226,6 +228,10 @@ export interface Post {
   /**
    * Optional tags for filtering and cross-linking.
    */
+  /**
+   * Associate this article with a manufacturer brand.
+   */
+  brand?: (number | null) | Brand;
   tags?:
     | {
         tag: string;
@@ -295,6 +301,88 @@ export interface Subscriber {
   source?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brands".
+ */
+export interface Brand {
+  id: number;
+  name: string;
+  slug: string;
+  tagline?: string | null;
+  origin?: string | null;
+  foundingYear?: number | null;
+  description?: string | null;
+  logo?: (number | null) | Media;
+  heroImage?: (number | null) | Media;
+  history?: {
+    root: {
+      type: string;
+      children: { type: any; version: number; [k: string]: unknown }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  modelSeries?:
+    | {
+        name: string;
+        yearIntroduced?: number | null;
+        description?: { root: { type: string; children: { type: any; version: number; [k: string]: unknown }[]; direction: ('ltr' | 'rtl') | null; format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | ''; indent: number; version: number }; [k: string]: unknown } | null;
+        image?: (number | null) | Media;
+        productHandle?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  gallery?:
+    | {
+        image: number | Media;
+        caption?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  timeline?:
+    | {
+        year: string;
+        title: string;
+        body?: string | null;
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  featured?: boolean | null;
+  sortOrder?: number | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "brands_select".
+ */
+export interface BrandsSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  tagline?: T;
+  origin?: T;
+  foundingYear?: T;
+  description?: T;
+  logo?: T;
+  heroImage?: T;
+  history?: T;
+  modelSeries?: T | { name?: T; yearIntroduced?: T; description?: T; image?: T; productHandle?: T; id?: T };
+  gallery?: T | { image?: T; caption?: T; id?: T };
+  timeline?: T | { year?: T; title?: T; body?: T; image?: T; id?: T };
+  featured?: T;
+  sortOrder?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -438,6 +526,7 @@ export interface PostsSelect<T extends boolean = true> {
   status?: T;
   publishedAt?: T;
   featured?: T;
+  brand?: T;
   category?: T;
   excerpt?: T;
   featuredImage?: T;
