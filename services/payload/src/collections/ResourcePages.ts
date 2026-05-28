@@ -246,11 +246,11 @@ export const ResourcePages: CollectionConfig = {
                 ],
               },
 
-              // ── Two-Column: Text + Spec Table ─────────────────────────────
+              // ── Two-Column: Rich Text + Rich Text ─────────────────────────
               {
                 slug: 'twoColumnSpec',
                 labels: {
-                  singular: 'Two Column (Text + Spec)',
+                  singular: 'Two Column',
                   plural:   'Two Column Sections',
                 },
                 fields: [
@@ -266,32 +266,32 @@ export const ResourcePages: CollectionConfig = {
                     ],
                   },
                   {
-                    name: 'leftText',
-                    type: 'textarea',
-                    label: 'Left Column — Text',
-                    admin: {
-                      rows: 8,
-                      description: 'Descriptive copy. Separate paragraphs with a blank line.',
-                      placeholder: 'Write the context or narrative for this section here…',
-                    },
+                    name: 'leftHeading',
+                    type: 'text',
+                    label: 'Left Column — Heading (optional)',
+                    admin: { placeholder: 'e.g. "Overview"' },
+                  },
+                  {
+                    name: 'leftContent',
+                    type: 'richText',
+                    label: 'Left Column — Content',
+                    editor: lexicalEditor({
+                      features: ({ defaultFeatures }) => defaultFeatures,
+                    }),
                   },
                   {
                     name: 'rightHeading',
                     type: 'text',
-                    label: 'Right Column — Table Heading',
-                    admin: { placeholder: 'e.g. "Technical Specifications"' },
+                    label: 'Right Column — Heading (optional)',
+                    admin: { placeholder: 'e.g. "Specifications"' },
                   },
                   {
-                    name: 'rightNote',
-                    type: 'textarea',
-                    label: 'Right Column — Note (optional)',
-                    admin: { rows: 2, description: 'Short note shown above the spec rows on the right.' },
-                  },
-                  {
-                    name: 'rightEntries',
-                    type: 'array',
-                    label: 'Right Column — Spec Rows',
-                    fields: specEntryFields,
+                    name: 'rightContent',
+                    type: 'richText',
+                    label: 'Right Column — Content',
+                    editor: lexicalEditor({
+                      features: ({ defaultFeatures }) => defaultFeatures,
+                    }),
                   },
                 ],
               },
