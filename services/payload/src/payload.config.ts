@@ -13,6 +13,7 @@ import { Comments } from './collections/Comments'
 import { Subscribers } from './collections/Subscribers'
 import { Brands } from './collections/Brands'
 import { ResourcePages } from './collections/ResourcePages'
+import { FaqItems } from './collections/FaqItems'
 import { SiteSettings } from './globals/SiteSettings'
 import { HeroSlides } from './globals/HeroSlides'
 import { AboutPage } from './globals/AboutPage'
@@ -44,7 +45,7 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages],
+  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems],
   globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
