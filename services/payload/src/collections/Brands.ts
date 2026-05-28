@@ -95,6 +95,16 @@ export const Brands: CollectionConfig = {
 
     // ─── Sidebar settings ────────────────────────────────────────────────────
     {
+      name: 'showInHub',
+      type: 'checkbox',
+      label: 'Show in Resources on Guns hub',
+      defaultValue: false,
+      admin: {
+        position: 'sidebar',
+        description: 'When checked, this brand appears on the /resources-on-guns listing page. Check this once editorial content (history, model series, etc.) has been added.',
+      },
+    },
+    {
       name: 'featured',
       type: 'checkbox',
       label: 'Show on About page',

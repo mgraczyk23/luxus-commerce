@@ -353,6 +353,7 @@ export interface Brand {
         id?: string | null;
       }[]
     | null;
+  showInHub?: boolean | null;
   featured?: boolean | null;
   sortOrder?: number | null;
   seoTitle?: string | null;
@@ -377,6 +378,7 @@ export interface BrandsSelect<T extends boolean = true> {
   modelSeries?: T | { name?: T; yearIntroduced?: T; description?: T; image?: T; productHandle?: T; id?: T };
   gallery?: T | { image?: T; caption?: T; id?: T };
   timeline?: T | { year?: T; title?: T; body?: T; image?: T; id?: T };
+  showInHub?: T;
   featured?: T;
   sortOrder?: T;
   seoTitle?: T;
