@@ -193,10 +193,10 @@ export const Brands: CollectionConfig = {
         {
           name: 'productHandle',
           type: 'text',
-          label: 'Medusa Product Handle (optional)',
+          label: 'Model Page Slug',
           admin: {
-            description: 'To link directly to a specific product listing, enter its Medusa handle here.',
-            placeholder: 'e.g. "nighthawk-president-9mm"',
+            description: 'Slug used to filter products on the /shop/model/[slug] page. Should match the Medusa model attribute exactly, lowercased with hyphens (e.g. "p226", "p320", "1911"). Leave blank if this series has no dedicated shop page.',
+            placeholder: 'e.g. "p226" or "1911"',
           },
         },
       ],
