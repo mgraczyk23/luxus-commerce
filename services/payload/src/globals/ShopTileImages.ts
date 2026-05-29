@@ -113,5 +113,36 @@ export const ShopTileImages: GlobalConfig = {
         },
       ],
     },
+    {
+      name: 'models',
+      type: 'array',
+      label: 'Model Tile Images',
+      admin: {
+        description: 'One row per model. The handle is the model name converted to a URL slug — lowercase, spaces become hyphens. e.g. "Python" → "python", "P210 Legend" → "p210-legend". Check the storefront URL at /shop/model/[handle] to confirm.',
+        initCollapsed: false,
+      },
+      fields: [
+        {
+          name: 'handle',
+          type: 'text',
+          label: 'Model Handle (slug)',
+          required: true,
+          admin: {
+            description: 'Lowercase, hyphens only. e.g. "python", "p210-legend", "1911", "agent"',
+            placeholder: 'e.g. python',
+          },
+        },
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'Tile Image',
+          required: true,
+          admin: {
+            description: 'Landscape or square photo. Minimum 800 × 500 px.',
+          },
+        },
+      ],
+    },
   ],
 }
