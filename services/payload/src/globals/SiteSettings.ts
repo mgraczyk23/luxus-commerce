@@ -103,5 +103,33 @@ export const SiteSettings: GlobalConfig = {
         { name: 'link',    type: 'text',     label: 'Link URL (optional)' },
       ],
     },
+    {
+      name: 'footer',
+      type: 'group',
+      label: 'Footer',
+      fields: [
+        {
+          name: 'blurb',
+          type: 'textarea',
+          label: 'Brand Blurb',
+          admin: { description: 'Short description shown under the logo in the footer.' },
+          defaultValue: "A boutique destination for the serious collector, curating the world's finest production and custom pistols since 2026.",
+        },
+        {
+          name: 'copyrightLine',
+          type: 'text',
+          label: 'Copyright Line',
+          admin: { description: 'Shown on the left of the bottom bar. E.g. "© 2026 Luxus Collection LLC · All Rights Reserved".' },
+          defaultValue: '© 2026 Luxus Collection LLC · luxus-collection.com · All Rights Reserved',
+        },
+        {
+          name: 'legalLine',
+          type: 'textarea',
+          label: 'Legal / FFL Compliance Line',
+          admin: { description: 'Shown on the right of the bottom bar. Include your FFL license number here — update it whenever your license renews.' },
+          defaultValue: 'All transactions conducted in full compliance with federal, state, and local firearms laws. FFL transfers required. Licensed Federal Firearms Dealer · License #1-59-XXX-XX-XX-55688.',
+        },
+      ],
+    },
   ],
 }
