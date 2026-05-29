@@ -22,6 +22,8 @@ import { ShippingPolicy } from './globals/ShippingPolicy'
 import { PrivacyPolicy } from './globals/PrivacyPolicy'
 import { TermsPolicy } from './globals/TermsPolicy'
 import { ConsignmentPage } from './globals/ConsignmentPage'
+import { ContactPage } from './globals/ContactPage'
+import { SupportPage } from './globals/SupportPage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -47,7 +49,7 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems],
-  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage],
+  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage, ContactPage, SupportPage],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
