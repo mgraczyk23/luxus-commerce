@@ -24,6 +24,8 @@ import { TermsPolicy } from './globals/TermsPolicy'
 import { ConsignmentPage } from './globals/ConsignmentPage'
 import { ContactPage } from './globals/ContactPage'
 import { SupportPage } from './globals/SupportPage'
+import { FeaturedPage } from './globals/FeaturedPage'
+import { FeaturedClassifieds } from './collections/FeaturedClassifieds'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -48,8 +50,8 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems],
-  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage, ContactPage, SupportPage],
+  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems, FeaturedClassifieds],
+  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage, ContactPage, SupportPage, FeaturedPage],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
