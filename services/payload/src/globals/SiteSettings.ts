@@ -42,6 +42,12 @@ export const SiteSettings: GlobalConfig = {
         { name: 'city',  type: 'text', label: 'City',           defaultValue: 'Sarasota' },
         { name: 'state', type: 'text', label: 'State',          defaultValue: 'FL' },
         { name: 'zip',   type: 'text', label: 'ZIP Code',       defaultValue: '34232' },
+        {
+          name: 'mapEmbedUrl',
+          type: 'text',
+          label: 'Map Embed URL',
+          admin: { description: 'From Google Maps: search your address → Share → Embed a map → copy the src="…" URL. Leave blank to auto-generate from the address fields above.' },
+        },
       ],
     },
     {

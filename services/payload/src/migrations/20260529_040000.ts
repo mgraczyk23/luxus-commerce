@@ -1,0 +1,16 @@
+import { MigrateUpArgs, MigrateDownArgs } from '@payloadcms/db-postgres'
+import { sql } from '@payloadcms/db-postgres'
+
+export async function up({ db }: MigrateUpArgs): Promise<void> {
+  await db.execute(sql`
+    ALTER TABLE site_settings
+      ADD COLUMN IF NOT EXISTS address_map_embed_url text
+  `)
+}
+
+export async function down({ db }: MigrateDownArgs): Promise<void> {
+  await db.execute(sql`
+    ALTER TABLE site_settings
+      DROP COLUMN IF EXISTS address_map_embed_url
+  `)
+}
