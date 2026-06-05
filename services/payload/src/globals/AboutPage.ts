@@ -58,6 +58,50 @@ export const AboutPage: GlobalConfig = {
       admin: { description: 'Square image beside the curation criteria list. Best at 1:1 ratio, minimum 500 × 500 px.' },
     },
 
+    /* ── Heritage Gallery ───────────────────────────────────────────────── */
+    {
+      name: 'galleryHeading',
+      type: 'text',
+      label: 'Gallery — Heading',
+      admin: { description: 'Section title. Defaults to "From the Vault" if left blank.' },
+    },
+    {
+      name: 'galleryIntro',
+      type: 'text',
+      label: 'Gallery — Intro',
+      admin: { description: 'Optional one-line description shown below the heading.' },
+    },
+    {
+      name: 'gallery',
+      type: 'array',
+      label: 'Gallery Items',
+      admin: {
+        description: 'Showcase past pieces that never made it to the live site. Each item is a photo with optional title and caption. Upload at 4:3 (landscape) for best results.',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'image',
+          type: 'upload',
+          relationTo: 'media',
+          required: true,
+          label: 'Photo',
+        },
+        {
+          name: 'title',
+          type: 'text',
+          label: 'Title (optional)',
+          admin: { description: 'e.g. "Colt Single Action Army — Factory Engraved"' },
+        },
+        {
+          name: 'caption',
+          type: 'text',
+          label: 'Caption (optional)',
+          admin: { description: 'Short description shown on hover or below the photo.' },
+        },
+      ],
+    },
+
     /* ── Hero ────────────────────────────────────────────────────────────── */
     {
       name: 'heroHeadline',
