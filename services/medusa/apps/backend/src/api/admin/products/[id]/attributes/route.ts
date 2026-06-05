@@ -56,7 +56,10 @@ export async function GET(req: MedusaRequest, res: MedusaResponse) {
     return res.status(404).json({ message: "Product not found" })
   }
 
-  res.json({ attribute_values: (data[0] as any).attribute_values ?? [] })
+  // Filter out nulls — orphaned links (attribute_value deleted but link not cleaned up)
+  // would otherwise cause "Cannot read properties of null" in the admin widget.
+  const raw: any[] = (data[0] as any).attribute_values ?? []
+  res.json({ attribute_values: raw.filter((v) => v?.id != null) })
 }
 
 export async function POST(req: MedusaRequest, res: MedusaResponse) {
