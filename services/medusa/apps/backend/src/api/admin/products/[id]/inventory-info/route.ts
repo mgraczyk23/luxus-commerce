@@ -2,6 +2,32 @@ import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 import { ContainerRegistrationKeys, Modules } from "@medusajs/framework/utils"
 import { INVENTORY_MANAGEMENT_MODULE } from "../../../../../modules/inventory-management"
 
+// Direct SQL update — reliable regardless of product module service API changes.
+// Sets or removes backroom_hidden in product.metadata, then fires storefront revalidation.
+async function syncBackroomToMetadata(productId: string, hidden: boolean) {
+  const { Pool } = require("pg")
+  const pool = new Pool({ connectionString: process.env.DATABASE_URL })
+  try {
+    if (hidden) {
+      await pool.query(
+        `UPDATE product SET metadata = COALESCE(metadata, '{}') || '{"backroom_hidden":"true"}'::jsonb WHERE id = $1`,
+        [productId]
+      )
+    } else {
+      await pool.query(
+        `UPDATE product SET metadata = COALESCE(metadata, '{}') - 'backroom_hidden' WHERE id = $1`,
+        [productId]
+      )
+    }
+  } finally {
+    await pool.end()
+  }
+  // Revalidate storefront cache so the change is reflected immediately
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? "https://dev.luxus-collection.com"
+  const secret = process.env.REVALIDATE_SECRET ?? ""
+  await fetch(`${storefrontUrl}/api/revalidate?tag=products&secret=${encodeURIComponent(secret)}`).catch(() => {})
+}
+
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   const { id } = req.params
@@ -31,6 +57,8 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     [INVENTORY_MANAGEMENT_MODULE]: { inventory_info_id: info.id },
   })
 
+  await syncBackroomToMetadata(id, !!(req.body as any).is_master_backroom || !!(req.body as any).is_backroom)
+
   res.status(201).json({ inventory_info: info })
 }
 
@@ -58,6 +86,8 @@ export async function PUT(req: MedusaRequest, res: MedusaResponse) {
   // Array-with-id form is required — selector+data form silently no-ops in this Medusa version
   const result = await (service as any).updateInventoryInfos([{ id: existing.id, ...updateData }])
   const updated = Array.isArray(result) ? result[0] : result
+
+  await syncBackroomToMetadata(id, !!updated.is_master_backroom || !!updated.is_backroom)
 
   res.json({ inventory_info: updated })
 }
