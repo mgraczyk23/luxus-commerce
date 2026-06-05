@@ -104,12 +104,22 @@ async function importOne(
   } = deps
 
   try {
-    // Build metadata — merge highlights, in_the_box, and extra_specs
+    // Build metadata — storefront mapper reads these fields from product.metadata,
+    // so anything displayed on listing pages or cards must be here as well as
+    // in the custom module tables.
     const metadata: Record<string, any> = {}
     if (item.highlights?.length) metadata.highlights = item.highlights.slice(0, 4)
     if (item.in_the_box?.length) metadata.in_the_box = item.in_the_box
     if (item.extra_specs && Object.keys(item.extra_specs).length)
       metadata.extra_specs = item.extra_specs
+    // Details fields also mirrored to metadata for listing-page display
+    if (item.details?.short_description) metadata.short_description = item.details.short_description
+    if (item.details?.engraver)           metadata.engraver          = item.details.engraver
+    if (item.details?.primary_category)   metadata.primary_category  = item.details.primary_category
+    if (item.details?.contact_for_pricing === true) metadata.contact_for_pricing = "true"
+    // Backroom flag — hides product from all public store pages
+    if (item.inventory?.is_master_backroom || item.inventory?.is_backroom)
+      metadata.backroom_hidden = "true"
 
     // Resolve category IDs from handles
     const categoryIds = (item.categories ?? [])

@@ -89,54 +89,79 @@ Array of strings rendered as a bullet list. The tab is hidden on the storefront 
 
 ### `extra_specs` — Additional specification rows
 
-Free-form key/value object for spec table rows that don't fit the structured `specs` fields. Rendered after the structured specs in the Specifications tab.
+Free-form key/value object for spec table rows that don't fit the structured `specs` fields or `attributes`. Rendered after all other specs in the Specifications tab.
 
 ```json
 "extra_specs": {
   "Height": "5.25\"",
   "Width": "1.3\"",
-  "Capacity": "8+1",
   "Slide Material": "416 Stainless Steel",
   "Safety": "Ambidextrous Thumb Safety",
   "Country of Origin": "United States"
 }
 ```
 
-> **Don't double-enter specs.** Caliber, Action, Barrel Length, Capacity, and Frame Color are pulled automatically from the `attributes` block into the spec table. Overall Length, Weight, Frame Material, Grips, Sights, and Finish come from the `specs` block. Use `extra_specs` only for rows that don't fit those two places.
+> **Don't double-enter specs.** The `attributes` block auto-populates Brand, Model, Caliber, Action, Barrel Length, Magazine Capacity, and Frame Color into the spec table. The `specs` block populates Overall Length, Weight, Frame Material, Grips, Sights, and Finish. Use `extra_specs` only for rows that don't fit those two places.
 
 ---
 
 ### `details` Object — Per-product editorial and display settings
 
-Partially storefront visible — see visibility column.
-
-| Field | Type | Visibility | Description |
+| Field | Type | Storefront visibility | Description |
 |---|---|---|---|
-| `short_description` | string | Public | One-paragraph summary shown below the subtitle on the detail page |
+| `short_description` | string | Listing pages + PDP | One-paragraph summary shown below the subtitle on the detail page and on cards |
 | `serial_number` | string | **Admin only** | Firearm serial number — never returned by the store API |
-| `optics_ready` | boolean | Public | Whether the pistol accepts optics without modification. Also flows into the Specifications tab as "Optics Ready: Yes/No" |
-| `contact_for_pricing` | boolean | Public | When `true`, hides the price and replaces the Add to Cart button with a "Contact Us For Pricing" modal |
-| `primary_category` | string | Public | Floating gold badge on product cards. e.g. `"Engraved"`, `"Prototype"`, `"Limited Edition"`, `"Heritage"`. Leave omitted for no badge |
-| `engraver` | string | Public | When set, displays an "Engraved By [name]" callout on the detail page. Leave omitted on non-engraved pieces |
-| `seo_meta_title` | string | Public | Overrides the `<title>` tag on the product detail page |
-| `seo_meta_description` | string | Public | Sets the meta description for the product detail page |
+| `optics_ready` | boolean | Specs tab | Whether the pistol accepts optics without modification. Flows into the Specifications tab as "Optics Ready: Yes / No" |
+| `contact_for_pricing` | boolean | PDP + cards | When `true`, hides the price and shows "Contact Us For Pricing" instead of Add to Cart |
+| `primary_category` | string | Product cards | Floating gold badge on product cards. e.g. `"Engraved"`, `"Prototype"`, `"Limited Edition"`, `"Heritage"`. Omit for no badge |
+| `engraver` | string | PDP | Displays an "Engraved By [name]" callout on the detail page. Omit on non-engraved pieces |
+| `seo_meta_title` | string | `<title>` tag | Overrides the page title on the product detail page |
+| `seo_meta_description` | string | `<meta description>` | Sets the meta description for the product detail page |
 
-> **Serial number privacy:** `serial_number` is stored server-side and returned only by admin API routes. The public store endpoint explicitly excludes it. Serial numbers can be traced through manufacturer records to dealer cost — never expose them publicly.
+> **Serial number privacy:** `serial_number` is stored server-side only. The public store endpoint explicitly excludes it. Serial numbers can be traced through manufacturer records to dealer cost — never expose them publicly.
+
+> **Metadata mirroring:** `short_description`, `engraver`, `primary_category`, and `contact_for_pricing` are written to both the `product_detail` module record and to `product.metadata`. This ensures they appear correctly on listing pages and product cards, which read from `metadata`, as well as on the detail page, which reads from the module record.
 
 ---
 
 ### `specs` Object — Structured specification fields
 
-These render as named rows in the Specifications tab. Hidden when all fields are null.
+These render as named rows in the Specifications tab, after the attribute-derived rows. All fields are optional; hidden when all are null.
 
-| Field | Type | Renders as | Example |
-|---|---|---|---|
-| `overall_length` | string | Overall Length | `"8.75\""` |
-| `weight` | string | Weight (Unloaded) | `"40.9 oz"` |
-| `frame_material` | string | Frame Material | `"416 Stainless Steel"` |
-| `grip_material` | string | Grips | `"G10 Piranha — Black / Grey"` |
-| `sight_type` | string | Sights | `"Heinie Straight Eight Ledge — Night Sights"` |
-| `finish_type` | string | Finish | `"DLC (Diamond-Like Carbon) — Black"` |
+| Field | Type | Renders as |
+|---|---|---|
+| `overall_length` | string | Overall Length |
+| `weight` | string | Weight (Unloaded) |
+| `frame_material` | string | Frame Material |
+| `grip_material` | string | Grips |
+| `sight_type` | string | Sights |
+| `finish_type` | string | Finish |
+
+---
+
+### Specifications tab — full display order
+
+The Specifications tab assembles rows from three sources in this order:
+
+| # | Field | Source |
+|---|---|---|
+| 1 | Brand | `attributes.brand` |
+| 2 | Model | `attributes.model` |
+| 3 | Caliber | `attributes.caliber` |
+| 4 | Action | `attributes.action` |
+| 5 | Barrel Length | `attributes.barrel-length` |
+| 6 | Magazine Capacity | `attributes.magazine-capacity` |
+| 7 | Frame Color | `attributes.frame-color` |
+| 8 | Overall Length | `specs.overall_length` |
+| 9 | Weight (Unloaded) | `specs.weight` |
+| 10 | Frame Material | `specs.frame_material` |
+| 11 | Grips | `specs.grip_material` |
+| 12 | Sights | `specs.sight_type` |
+| 13 | Finish | `specs.finish_type` |
+| 14 | Optics Ready | `details.optics_ready` |
+| + | Any extra rows | `extra_specs` key/value pairs |
+
+Rows with no value are automatically omitted. The tab is hidden entirely if no rows have data.
 
 ---
 
@@ -158,14 +183,16 @@ All fields in this block are strictly internal. They are never returned by any p
 | `importer_name` | string | Name of the importing entity |
 | `importer_mark` | string | Importer's mark stamped on the firearm |
 | `importer_mark_location` | string | Location of the importer's mark on the firearm |
-| `is_master_backroom` | boolean | In the backroom pool but hidden from VIP display |
-| `is_backroom` | boolean | Actively shown in the VIP/backroom area |
+| `is_master_backroom` | boolean | Hidden from main store AND from VIP display |
+| `is_backroom` | boolean | Hidden from main store; shown in VIP area only |
+
+> **Backroom hides from the storefront.** Setting either `is_master_backroom` or `is_backroom` to `true` writes `backroom_hidden: "true"` into `product.metadata`, which causes the product to be filtered out of all public store pages (Shop All, Collectible Firearms, Modern Firearms, brand pages, category pages, featured page, and the home page). The product page URL remains accessible if visited directly. Both flags can be toggled any time from the admin inventory widget — the storefront updates within seconds via automatic cache revalidation.
 
 ---
 
 ### `attributes` Object — Filterable product attributes
 
-Key/value pairs where the key is an attribute type **slug** and the value is a string or array of strings. These power the listing page filters and also auto-populate the Specifications tab (Caliber, Action, Barrel Length, Capacity, Frame Color).
+Key/value pairs where the key is an attribute type **slug** and the value is a string or array of strings. These power the listing page filters AND auto-populate the top rows of the Specifications tab.
 
 - **Multi-select types** (brand, caliber): pass a single string or an array
 - **Single-select types** (action, barrel-length, frame-color, magazine-capacity, model): pass a single string
@@ -174,17 +201,56 @@ Key/value pairs where the key is an attribute type **slug** and the value is a s
 
 **Attribute types and their slugs:**
 
-| Slug | Select type | Notes |
-|---|---|---|
-| `brand` | Multi-select | Manufacturer name. Drives the Brand filter and card eyebrow |
-| `caliber` | Multi-select | Drives the Caliber filter and the "Caliber" row in the spec table |
-| `action` | Single-select | Drives the Action filter and the "Action" row in the spec table |
-| `barrel-length` | Single-select | Drives the Barrel Length filter and the "Barrel Length" row in the spec table |
-| `frame-color` | Single-select | Drives the Frame Color filter and the "Frame Color" row in the spec table |
-| `magazine-capacity` | Single-select | Drives the Capacity filter and the "Capacity" row in the spec table |
-| `model` | Single-select | Drives the Model filter |
+| Slug | Select type | Filter label | Spec table label |
+|---|---|---|---|
+| `brand` | Multi-select | Brand | Brand |
+| `model` | Single-select | Model | Model |
+| `caliber` | Multi-select | Caliber | Caliber |
+| `action` | Single-select | Action | Action |
+| `barrel-length` | Single-select | Barrel Length | Barrel Length |
+| `magazine-capacity` | Single-select | Magazine Capacity | Magazine Capacity |
+| `frame-color` | Single-select | Frame Color | Frame Color |
 
 > **Values are managed in the admin, not hardcoded here.** Go to `/app/product-attributes` in the Medusa admin to see current values, add new ones, or add new attribute types. New brands, calibers, models, etc. must be added there before they can be referenced in an import.
+
+---
+
+### Product Tags — Firearm type classification
+
+Products can carry one or both classification tags that control which section of the site they appear in. Tags are **not set via the import API** — assign them in Medusa Admin → Products → [product] → Tags after import, or via the Medusa admin API.
+
+| Tag | Effect |
+|---|---|
+| `Collectibles Firearms` | Product appears on `/shop/collectible-firearms` and in the "Collectible Firearms" filter on Shop All |
+| `Modern Firearms` | Product appears on `/shop/modern-firearms` and in the "Modern Firearms" filter on Shop All |
+| `Featured` | Product appears in the Featured section on the home page |
+
+> A product can carry both tags if appropriate. Products with neither tag appear only on Shop All.
+
+---
+
+## Post-Import Steps
+
+After running an import, two follow-up steps are required:
+
+### 1. Set up inventory
+
+Imported products have no inventory records by default, which means the storefront shows them as "Unavailable." Run the bulk inventory setup script to create inventory records for any products missing them:
+
+```bash
+cd /home/ubuntu/luxus-commerce
+node scripts/bulk-set-inventory.mjs
+```
+
+Use `--dry-run` first to preview. The script is safe to re-run — it skips products that already have inventory.
+
+After running, go to Medusa Admin → Inventory and set the quantity for each product:
+- **Quantity ≥ 1** → shows as "Available"
+- **Quantity = 0** → shows as "Unavailable" (page stays live for SEO)
+
+### 2. Assign product tags
+
+Products are not automatically assigned to "Collectibles Firearms" or "Modern Firearms" sections. Go to Medusa Admin and add the appropriate tag(s) to each imported product, or use the Medusa admin API to bulk-tag by SKU pattern.
 
 ---
 
@@ -309,12 +375,12 @@ curl -X POST https://api.luxus-collection.com/import/products \
     },
     "attributes": {
       "brand": "Nighthawk Custom",
+      "model": "Agent",
       "caliber": ".45 ACP",
       "action": "Single Action",
       "barrel-length": "5\"",
       "frame-color": "Black",
-      "magazine-capacity": "8",
-      "model": "Agent"
+      "magazine-capacity": "8"
     }
   }'
 ```
@@ -333,7 +399,8 @@ curl -X POST https://api.luxus-collection.com/import/products \
     "categories": ["1911"],
     "details": {
       "serial_number": "CAB-00199",
-      "short_description": "One of only 100 ever made."
+      "short_description": "One of only 100 ever made.",
+      "primary_category": "Heritage"
     },
     "inventory": {
       "is_consignment": true,
@@ -391,6 +458,30 @@ curl -X POST https://api.luxus-collection.com/import/products \
     }
   }'
 ```
+
+### Backroom / VIP product (hidden from public store)
+
+```bash
+curl -X POST https://api.luxus-collection.com/import/products \
+  -H "Content-Type: application/json" \
+  -H "X-Api-Key: YOUR_API_KEY" \
+  -d '{
+    "title": "Wilson Combat Exclusive — VIP Only",
+    "sku": "WC-VIP-001",
+    "price": 4500.00,
+    "status": "published",
+    "inventory": {
+      "is_backroom": true
+    },
+    "attributes": {
+      "brand": "Wilson Combat",
+      "caliber": ".45 ACP",
+      "action": "Single Action"
+    }
+  }'
+```
+
+> This product will be live (`status: published`) but filtered out of all public store pages. It is accessible directly at its `/product/<handle>` URL.
 
 ### Bulk import — array of products
 
@@ -459,6 +550,7 @@ result = import_product({
     "price": 3499.00,
     "attributes": {
         "brand": "Nighthawk Custom",
+        "model": "Agent",
         "caliber": ".45 ACP",
         "action": "Single Action",
     },
@@ -498,9 +590,9 @@ import requests
 import json
 from pathlib import Path
 
-MEDUSA_URL    = "https://api.luxus-collection.com"
+MEDUSA_URL     = "https://api.luxus-collection.com"
 IMPORT_API_KEY = "your-import-api-key"
-ADMIN_EMAIL   = "your-admin@email.com"
+ADMIN_EMAIL    = "your-admin@email.com"
 ADMIN_PASSWORD = "your-password"
 
 def get_auth_token():
@@ -597,12 +689,12 @@ for item in result["results"]:
     },
     "attributes": {
       "brand": "Nighthawk Custom",
+      "model": "Agent",
       "caliber": ".45 ACP",
       "action": "Single Action",
       "barrel-length": "5\"",
       "frame-color": "Black",
-      "magazine-capacity": "8",
-      "model": "Agent"
+      "magazine-capacity": "8"
     }
   }
 ]
@@ -618,18 +710,28 @@ Images are matched to products by SKU automatically. Products with no matching i
 
 **Prices are in dollars, stored in cents.** Pass `3499.00` for a $3,499 item.
 
-**Attribute values must already exist.** The import does not create new attribute types or values on the fly. Add new brands, models, calibers, etc. via the admin at `/app/product-attributes` before running an import that references them.
+**Attribute values must already exist.** The import does not create new attribute types or values on the fly. Add new brands, models, calibers, etc. via the admin at `/app/product-attributes` before running an import that references them. Unknown values produce a warning but do not fail the import.
 
-**Categories and collections must already exist.** Create them in Medusa Admin before importing. Unknown handles produce a warning in the response but do not fail the import.
+**`model` is an attribute, not a core field.** Pass it in the `attributes` block as `"model": "P7 M13"`, not as a top-level field. The model attribute drives the Model filter on listing pages and the Model row in the spec table.
+
+**Categories and collections must already exist.** Create them in Medusa Admin before importing. Unknown handles produce a warning but do not fail the import.
 
 **Products default to `draft`.** Set `"status": "published"` to make them live immediately.
 
+**Inventory records are not created automatically.** Imported products have no inventory and will show as "Unavailable." Run `scripts/bulk-set-inventory.mjs` after any bulk import to initialize inventory at quantity 1, then adjust quantities in the admin.
+
+**Product tags must be assigned after import.** The import API does not set product tags. Add "Collectibles Firearms" or "Modern Firearms" tags in Medusa Admin after import so products appear in the correct storefront sections.
+
 **Inventory and serial number fields are admin-only.** The `inventory` block and `details.serial_number` are never returned by any public or store-facing API route.
 
-**Specs and In The Box tabs hide when empty.** The store specs endpoint returns `null` when no specs are set. The storefront uses this to show or hide the Specifications tab. Same for the In The Box tab.
+**Backroom flags hide from all public pages immediately.** Setting `is_backroom` or `is_master_backroom` to `true` in the import body causes the product to be filtered from all public listing pages. The storefront cache is revalidated automatically — no manual action needed.
 
-**Don't set filterable specs twice.** Caliber, Action, Barrel Length, Capacity, and Frame Color auto-populate the spec table from the `attributes` block. Only use `extra_specs` for rows not covered by `specs` or `attributes`.
+**Specs and In The Box tabs hide when empty.** The spec endpoint returns `null` when no specs are set. The storefront uses this to show or hide the Specifications tab. Same for the In The Box tab.
+
+**Don't set filterable attributes twice.** Brand, Model, Caliber, Action, Barrel Length, Magazine Capacity, and Frame Color auto-populate the spec table from the `attributes` block. Only use `extra_specs` for rows not covered by `specs` or `attributes`.
 
 **Bulk imports process sequentially.** Items are processed one at a time to avoid duplicate-handle collisions. Expect roughly 1–2 seconds per product for large catalogs.
 
 **Images must be hosted URLs.** The import endpoint accepts URLs only, not file uploads. Use the automated script above to upload from local files first.
+
+**`contact_for_pricing` must be in `details`, not top-level.** Pass it as `"details": { "contact_for_pricing": true }`. It is written to both the product_detail record and product metadata so it displays correctly on listing pages and the detail page.
