@@ -257,15 +257,26 @@ DELETE /admin/products/:id/attributes
 
 ### Resolving attribute value IDs
 
-You need the attribute value's ID, not the string value. Look them up once and cache:
+You need the attribute value's ID, not the string value. A **single call** returns all types with their values already nested — there is no separate per-type values endpoint:
 
 ```
 GET /admin/product-attributes
-→ { "attribute_types": [{ "id": "...", "slug": "caliber", "name": "Caliber" }] }
-
-GET /admin/product-attributes/:typeId/values
-→ { "attribute_values": [{ "id": "01KRKJ...", "value": "9mm" }] }
+→ {
+    "attribute_types": [
+      {
+        "id": "01KRKJ...",
+        "slug": "caliber",
+        "name": "Caliber",
+        "values": [
+          { "id": "01KRKJ0V4TN7...", "value": "9mm", "sort_order": 1 },
+          { "id": "01KRKJ0V4TX8...", "value": ".45 ACP", "sort_order": 2 }
+        ]
+      }
+    ]
+  }
 ```
+
+> `GET /admin/product-attributes/:typeId/values` does **not exist** and returns 404. Values are only available via the parent `GET /admin/product-attributes` response.
 
 ### Full attribute replace pattern
 
@@ -383,17 +394,18 @@ def update_metadata(token: str, prod_id: str,
 # ── Attributes ────────────────────────────────────────────────────────────────
 
 def build_attr_lookup(token: str) -> dict[str, dict[str, str]]:
-    """Returns { slug: { "value lowercase": "value_id" } } for all types."""
-    r = requests.get(f"{BASE}/admin/product-attributes?limit=100", headers=auth(token))
+    """Returns { slug: { "value lowercase": "value_id" } } for all types.
+
+    GET /admin/product-attributes returns all types with their values
+    already nested — one call, no per-type requests needed.
+    """
+    r = requests.get(f"{BASE}/admin/product-attributes", headers=auth(token))
     r.raise_for_status()
     lookup: dict[str, dict[str, str]] = {}
     for t in r.json().get("attribute_types", []):
-        rv = requests.get(f"{BASE}/admin/product-attributes/{t['id']}/values?limit=500",
-                          headers=auth(token))
-        rv.raise_for_status()
         lookup[t["slug"]] = {
             v["value"].lower(): v["id"]
-            for v in rv.json().get("attribute_values", [])
+            for v in t.get("values", [])
         }
     return lookup
 
