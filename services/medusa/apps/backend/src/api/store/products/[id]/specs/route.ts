@@ -4,10 +4,12 @@ import { PRODUCT_ATTRIBUTES_MODULE } from "../../../../../modules/product-attrib
 
 // Attribute type slugs that belong in the spec table, in display order
 const ATTR_SPEC_SLUGS: { slug: string; label: string }[] = [
+  { slug: "brand",             label: "Brand" },
+  { slug: "model",             label: "Model" },
   { slug: "caliber",           label: "Caliber" },
   { slug: "action",            label: "Action" },
   { slug: "barrel-length",     label: "Barrel Length" },
-  { slug: "magazine-capacity", label: "Capacity" },
+  { slug: "magazine-capacity", label: "Magazine Capacity" },
   { slug: "frame-color",       label: "Frame Color" },
 ]
 
