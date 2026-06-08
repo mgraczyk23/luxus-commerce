@@ -227,6 +227,33 @@ export const Brands: CollectionConfig = {
       ],
     },
 
+    // ─── Product Catalogs ────────────────────────────────────────────────────
+    {
+      name: 'catalogs',
+      type: 'array',
+      label: 'Product Catalogs',
+      admin: {
+        description: 'Upload PDF catalogs for this brand. Each entry becomes a download button on the brand hub page.',
+        initCollapsed: true,
+      },
+      fields: [
+        {
+          name: 'title',
+          type: 'text',
+          label: 'Catalog Title',
+          required: true,
+          admin: { placeholder: 'e.g. "2024 Full Line Catalog" or "Custom Shop Brochure"' },
+        },
+        {
+          name: 'file',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'PDF File',
+          required: true,
+        },
+      ],
+    },
+
     // ─── Brand Timeline ──────────────────────────────────────────────────────
     {
       name: 'timeline',
