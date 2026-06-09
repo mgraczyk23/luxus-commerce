@@ -17,6 +17,23 @@ function importApiKeyMiddleware(req: MedusaRequest, res: MedusaResponse, next: M
   next()
 }
 
+function elavonProxyMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
+  const secret = req.headers["x-elavon-proxy-secret"] as string
+  const expected = process.env.ELAVON_PROXY_SECRET
+
+  if (!expected) {
+    res.status(500).json({ message: "ELAVON_PROXY_SECRET is not configured" })
+    return
+  }
+
+  if (!secret || secret !== expected) {
+    res.status(401).json({ message: "Unauthorized" })
+    return
+  }
+
+  next()
+}
+
 function storefrontRevalidateMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
   const url = process.env.STOREFRONT_URL
   const secret = process.env.REVALIDATE_SECRET
@@ -35,6 +52,10 @@ export default defineMiddlewares({
     {
       matcher: "/import/*",
       middlewares: [importApiKeyMiddleware],
+    },
+    {
+      matcher: "/store/elavon/*",
+      middlewares: [elavonProxyMiddleware],
     },
     {
       matcher: "/admin/products*",
