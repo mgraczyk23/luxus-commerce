@@ -9,11 +9,7 @@ export default defineConfig({
   projectConfig: {
     databaseUrl: process.env.DATABASE_URL,
     databaseDriverOptions: {
-      connection: {
-        // Keep a minimum of 2 connections alive at all times so the first
-        // request after a quiet period doesn't pay a cold reconnection penalty.
-        pool: { min: 2, max: 10, idleTimeoutMillis: 300000 },
-      },
+      pool: { min: 2, max: 10, idleTimeoutMillis: 300000 },
     },
     redisUrl: process.env.REDIS_URL,
     http: {
