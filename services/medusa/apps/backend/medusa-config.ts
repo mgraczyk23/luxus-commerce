@@ -58,5 +58,8 @@ export default defineConfig({
     {
       resolve: "./src/modules/offers",
     },
+    {
+      resolve: "./src/modules/checkout-config",
+    },
   ],
 })
