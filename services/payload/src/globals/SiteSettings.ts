@@ -181,10 +181,10 @@ export const SiteSettings: GlobalConfig = {
           admin: { description: 'Found in GA4 → Admin → Data Streams → your stream. Format: G-XXXXXXXXXX', placeholder: 'G-XXXXXXXXXX' },
         },
         {
-          name: 'hotjarId',
+          name: 'postHogApiKey',
           type: 'text',
-          label: 'Hotjar — Site ID',
-          admin: { description: 'Found in Hotjar → Settings → Sites & Organizations. Numeric, e.g. 1234567', placeholder: '1234567' },
+          label: 'PostHog — Project API Key',
+          admin: { description: 'Found in PostHog → Project Settings → Project API Key. Format: phc_XXXXXXXXXX', placeholder: 'phc_XXXXXXXXXX' },
         },
         {
           name: 'semrushVerification',
