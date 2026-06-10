@@ -25,14 +25,11 @@ const ProductShippingRestrictionsWidget = ({ data }: DetailWidgetProps<AdminProd
     }
     setSaving(true)
     try {
-      await adminFetch(`/admin/products/${data.id}`, {
+      await adminFetch(`/admin/products/${data.id}/shipping-flags`, {
         method: "POST",
         body: JSON.stringify({
-          metadata: {
-            ...(data.metadata ?? {}),
-            has_threaded_barrel: hasThreadedBarrel ? "true" : "false",
-            magazine_capacity:   cap || null,
-          },
+          has_threaded_barrel: hasThreadedBarrel,
+          magazine_capacity:   cap ? Number(cap) : null,
         }),
       })
       toast.success("Shipping flags saved")
