@@ -168,5 +168,31 @@ export const SiteSettings: GlobalConfig = {
         },
       ],
     },
+    {
+      name: 'analytics',
+      type: 'group',
+      label: 'Analytics & Tracking',
+      admin: { description: 'Paste your IDs here — scripts load automatically on every page. Leave a field blank to disable that service.' },
+      fields: [
+        {
+          name: 'googleAnalyticsId',
+          type: 'text',
+          label: 'Google Analytics 4 — Measurement ID',
+          admin: { description: 'Found in GA4 → Admin → Data Streams → your stream. Format: G-XXXXXXXXXX', placeholder: 'G-XXXXXXXXXX' },
+        },
+        {
+          name: 'hotjarId',
+          type: 'text',
+          label: 'Hotjar — Site ID',
+          admin: { description: 'Found in Hotjar → Settings → Sites & Organizations. Numeric, e.g. 1234567', placeholder: '1234567' },
+        },
+        {
+          name: 'semrushVerification',
+          type: 'text',
+          label: 'SEMrush — Site Verification Code',
+          admin: { description: 'From SEMrush → Site Audit (or Domain Overview) → verify ownership → HTML tag method. Paste only the code value from the content="" attribute, not the full tag.' },
+        },
+      ],
+    },
   ],
 }
