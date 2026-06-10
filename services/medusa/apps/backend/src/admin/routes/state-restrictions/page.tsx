@@ -77,7 +77,7 @@ export default function StateRestrictionsPage() {
           restriction_type: newType,
           notes:            newNotes || undefined,
           magazine_limit:   newType === "magazine_warning" && newMagLimit ? Number(newMagLimit) : undefined,
-          firearm_type:     newType === "magazine_warning" && newFirearm  ? newFirearm           : undefined,
+          firearm_type:     newType === "magazine_warning" && newFirearm && newFirearm !== "all" ? newFirearm : undefined,
         }),
       })
       toast.success("Restriction added")
@@ -178,7 +178,7 @@ export default function StateRestrictionsPage() {
                 <Select value={newFirearm} onValueChange={setNewFirearm}>
                   <Select.Trigger><Select.Value placeholder="All firearms (default)" /></Select.Trigger>
                   <Select.Content>
-                    <Select.Item value="">All firearms</Select.Item>
+                    <Select.Item value="all">All firearms</Select.Item>
                     <Select.Item value="handgun">Handguns only</Select.Item>
                     <Select.Item value="rifle">Rifles only</Select.Item>
                     <Select.Item value="shotgun">Shotguns only</Select.Item>
