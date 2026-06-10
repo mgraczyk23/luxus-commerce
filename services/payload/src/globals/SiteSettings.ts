@@ -21,6 +21,34 @@ export const SiteSettings: GlobalConfig = {
   },
   fields: [
     {
+      name: 'branding',
+      type: 'group',
+      label: 'Branding',
+      admin: { description: 'Logo and favicon used across the site. Upload new files here to update them instantly — no code change needed.' },
+      fields: [
+        {
+          name: 'logo',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'Site Logo',
+          admin: { description: 'Displayed in the header and footer. Recommended: WebP or SVG with transparent background, at least 336 × 84 px.' },
+        },
+        {
+          name: 'favicon',
+          type: 'upload',
+          relationTo: 'media',
+          label: 'Favicon / Browser Icon',
+          admin: { description: 'Shown in browser tabs and bookmarks. Recommended: PNG or WebP, 64 × 64 px, square.' },
+        },
+        {
+          name: 'legalName',
+          type: 'text',
+          label: 'Legal Business Name',
+          admin: { description: 'Your registered legal entity name (e.g. "Luxus Collection LLC"). Used in Organization schema for SEO. Leave blank to use "Luxus Collection".' },
+        },
+      ],
+    },
+    {
       name: 'contact',
       type: 'group',
       label: 'Contact Information',
@@ -91,6 +119,15 @@ export const SiteSettings: GlobalConfig = {
         { name: 'location',      type: 'text', label: 'Bank Location',       defaultValue: 'Sarasota, FL' },
         { name: 'memo',          type: 'text', label: 'Payment Memo / Reference (optional)' },
       ],
+    },
+    {
+      name: 'fflLicense',
+      type: 'text',
+      label: 'FFL License Number',
+      admin: {
+        description: 'Your Federal Firearms License number. Appears on the About page, Support page, and Footer. Update here whenever your license renews.',
+        placeholder: '1-59-XXX-XX-XX-XXXXX',
+      },
     },
     {
       name: 'announcement',
