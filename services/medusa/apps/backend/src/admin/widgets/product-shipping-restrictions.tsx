@@ -5,17 +5,25 @@ import { useState, useEffect } from "react"
 import { adminFetch } from "../lib/api"
 
 const ProductShippingRestrictionsWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
-  const meta = (data.metadata ?? {}) as Record<string, string>
-
-  const [hasThreadedBarrel, setHasThreadedBarrel] = useState(meta.has_threaded_barrel === "true")
-  const [magazineCapacity,  setMagazineCapacity]  = useState(meta.magazine_capacity ?? "")
+  const [hasThreadedBarrel, setHasThreadedBarrel] = useState(false)
+  const [magazineCapacity,  setMagazineCapacity]  = useState("")
+  const [loading,           setLoading]           = useState(true)
   const [saving,            setSaving]            = useState(false)
 
   useEffect(() => {
-    const m = (data.metadata ?? {}) as Record<string, string>
-    setHasThreadedBarrel(m.has_threaded_barrel === "true")
-    setMagazineCapacity(m.magazine_capacity ?? "")
-  }, [data.metadata])
+    adminFetch<{ has_threaded_barrel: boolean; magazine_capacity: number | null }>(
+      `/admin/products/${data.id}/shipping-flags`
+    ).then(d => {
+      setHasThreadedBarrel(d.has_threaded_barrel)
+      setMagazineCapacity(d.magazine_capacity != null ? String(d.magazine_capacity) : "")
+    }).catch(() => {
+      const m = (data.metadata ?? {}) as Record<string, unknown>
+      const mc = m.magazine_capacity
+      const mcStr = Array.isArray(mc) ? String((mc as unknown[])[0] ?? "") : (mc != null ? String(mc) : "")
+      setHasThreadedBarrel(m.has_threaded_barrel === "true")
+      setMagazineCapacity(mcStr)
+    }).finally(() => setLoading(false))
+  }, [data.id])
 
   const handleSave = async () => {
     const cap = magazineCapacity.trim()
@@ -38,6 +46,15 @@ const ProductShippingRestrictionsWidget = ({ data }: DetailWidgetProps<AdminProd
     } finally {
       setSaving(false)
     }
+  }
+
+  if (loading) {
+    return (
+      <Container className="p-5">
+        <Heading level="h2" className="mb-1">Shipping Restrictions</Heading>
+        <Text size="xsmall" className="text-ui-fg-subtle">Loading…</Text>
+      </Container>
+    )
   }
 
   return (
