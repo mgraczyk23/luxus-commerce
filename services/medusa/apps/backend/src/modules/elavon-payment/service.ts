@@ -81,8 +81,6 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       : (process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com")
     const cancelUrl = `${storeFrontOrigin}/checkout?cancelled=1`
 
-    console.log("[Elavon] initiatePayment — cartId:", cartId, "email:", email, "billing:", JSON.stringify(billing))
-
     const params = new URLSearchParams({
       ssl_merchant_id: this.config.merchant_id,
       ssl_user_id: this.config.user_id,
@@ -96,11 +94,12 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       ssl_last_name:
         billing?.last_name ?? (context as any)?.customer?.last_name ?? "",
       // Pre-fill billing address on the hosted payment form
-      ssl_avs_address:   billing?.address_1 ?? "",
-      ssl_avs_zip:       billing?.postal_code ?? "",
-      ssl_billing_city:  billing?.city ?? "",
-      ssl_billing_state: (billing?.province ?? "").toUpperCase(),
-      ssl_phone:         billing?.phone ?? "",
+      ssl_avs_address: billing?.address_1 ?? "",
+      ssl_avs_zip:     billing?.postal_code ?? "",
+      ssl_city:        billing?.city ?? "",
+      ssl_state:       (billing?.province ?? "").toUpperCase(),
+      ssl_country:     "US",
+      ssl_phone:       billing?.phone ?? "",
       ssl_return_url: returnUrl,
       ssl_cancel_url: cancelUrl,
       ssl_show_form: "true",
