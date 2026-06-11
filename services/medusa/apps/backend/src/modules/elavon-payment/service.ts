@@ -74,6 +74,15 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
 
     const billing = (data as any)?.billing_address ?? (context as any)?.billing_address
     const email = (data as any)?.email ?? (context as any)?.email ?? ""
+
+    // Cancel URL sends customer back to checkout rather than the Converge merchant portal
+    const storeFrontOrigin = baseReturnUrl.includes("://")
+      ? new URL(baseReturnUrl).origin
+      : (process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com")
+    const cancelUrl = `${storeFrontOrigin}/checkout?cancelled=1`
+
+    console.log("[Elavon] initiatePayment — cartId:", cartId, "email:", email, "billing:", JSON.stringify(billing))
+
     const params = new URLSearchParams({
       ssl_merchant_id: this.config.merchant_id,
       ssl_user_id: this.config.user_id,
@@ -93,6 +102,7 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       ssl_billing_state: (billing?.province ?? "").toUpperCase(),
       ssl_phone:         billing?.phone ?? "",
       ssl_return_url: returnUrl,
+      ssl_cancel_url: cancelUrl,
       ssl_show_form: "true",
     })
 
