@@ -79,7 +79,7 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
     const storeFrontOrigin = baseReturnUrl.includes("://")
       ? new URL(baseReturnUrl).origin
       : (process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com")
-    const cancelUrl = `${storeFrontOrigin}/checkout?cancelled=1`
+    const cancelUrl = `${storeFrontOrigin}/api/elavon/cancel`
 
     const params = new URLSearchParams({
       ssl_merchant_id: this.config.merchant_id,
