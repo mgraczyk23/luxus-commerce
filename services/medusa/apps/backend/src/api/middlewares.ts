@@ -1,4 +1,4 @@
-import { defineMiddlewares, MedusaNextFunction, MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
+import { authenticate, defineMiddlewares, MedusaNextFunction, MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
 
 function importApiKeyMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
   const apiKey = req.headers["x-api-key"] as string
@@ -54,8 +54,16 @@ export default defineMiddlewares({
       middlewares: [importApiKeyMiddleware],
     },
     {
-      matcher: "/store/elavon/*",
+      matcher: "/store/elavon/token",
       middlewares: [elavonProxyMiddleware],
+    },
+    {
+      matcher: "/store/elavon/finalize",
+      middlewares: [elavonProxyMiddleware],
+    },
+    {
+      matcher: "/store/orders/by-email",
+      middlewares: [authenticate("customer", ["bearer"])],
     },
     {
       matcher: "/admin/products*",
