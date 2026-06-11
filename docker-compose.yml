@@ -100,6 +100,11 @@ services:
       EMAIL_FROM: ${EMAIL_FROM}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
       ADMIN_URL: ${ADMIN_URL}
+      ELAVON_MERCHANT_ID: ${ELAVON_MERCHANT_ID}
+      ELAVON_USER_ID: ${ELAVON_USER_ID}
+      ELAVON_PIN: ${ELAVON_PIN}
+      ELAVON_ENV: ${ELAVON_ENV}
+      ELAVON_PROXY_SECRET: ${ELAVON_PROXY_SECRET}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -132,6 +137,8 @@ services:
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       RESEND_API_KEY: ${RESEND_API_KEY}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
+      STOREFRONT_URL: ${STOREFRONT_URL}
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET}
     ports:
       - '127.0.0.1:3000:3000'
     deploy:
