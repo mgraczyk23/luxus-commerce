@@ -50,7 +50,11 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
 
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
     const { amount, currency_code, data, context } = input
-    const cartId: string = (context as any)?.cart_id ?? (context as any)?.resource_id ?? "unknown"
+    const cartId: string =
+      (data as any)?.cart_id ??
+      (context as any)?.cart_id ??
+      (context as any)?.resource_id ??
+      "unknown"
     const baseReturnUrl: string =
       (data as any)?.return_url ??
       `${process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com"}/api/elavon/complete`
@@ -68,7 +72,8 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
     // Invoice number: strip prefix, first 25 chars of ULID — matches Converge VT exactly
     const invoiceNumber = cartId.replace(/^cart_/, "").slice(0, 25)
 
-    const billing = (context as any)?.billing_address
+    const billing = (data as any)?.billing_address ?? (context as any)?.billing_address
+    const email = (data as any)?.email ?? (context as any)?.email ?? ""
     const params = new URLSearchParams({
       ssl_merchant_id: this.config.merchant_id,
       ssl_user_id: this.config.user_id,
@@ -76,7 +81,7 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       ssl_transaction_type: "ccsale",
       ssl_amount: amountStr,
       ssl_invoice_number: invoiceNumber,
-      ssl_email: (context as any)?.email ?? "",
+      ssl_email: email,
       ssl_first_name:
         billing?.first_name ?? (context as any)?.customer?.first_name ?? "",
       ssl_last_name:
@@ -116,18 +121,8 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       throw new Error("Could not reach payment server")
     }
 
-    const parsed = Object.fromEntries(
-      text.split("&").map((p) => {
-        const [k, v] = p.split("=")
-        return [decodeURIComponent(k ?? ""), decodeURIComponent(v ?? "")]
-      })
-    )
-
-    if (parsed.ssl_result_message && parsed.ssl_result_message !== "SUCCESS") {
-      throw new Error(`Elavon: ${parsed.ssl_result_message}`)
-    }
-
-    const token = parsed.ssl_txn_auth_token
+    // Converge transaction_token returns the raw token as the response body (plain string)
+    const token = text.trim()
     if (!token) throw new Error("Elavon returned no token")
 
     const hostedUrl = `${this.baseUrl}?ssl_txn_auth_token=${encodeURIComponent(token)}`
