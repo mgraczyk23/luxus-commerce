@@ -26,6 +26,8 @@ import { ContactPage } from './globals/ContactPage'
 import { SupportPage } from './globals/SupportPage'
 import { FeaturedPage } from './globals/FeaturedPage'
 import { FeaturedClassifieds } from './collections/FeaturedClassifieds'
+import { InternalLinks } from './collections/InternalLinks'
+import { PageSeo } from './globals/PageSeo'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -50,8 +52,8 @@ export default buildConfig({
       titleSuffix: '— Luxus Collection CMS',
     },
   },
-  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems, FeaturedClassifieds],
-  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage, ContactPage, SupportPage, FeaturedPage],
+  collections: [Users, Media, Posts, Comments, Subscribers, Brands, ResourcePages, FaqItems, FeaturedClassifieds, InternalLinks],
+  globals: [SiteSettings, HeroSlides, AboutPage, ShopTileImages, ShippingPolicy, PrivacyPolicy, TermsPolicy, ConsignmentPage, ContactPage, SupportPage, FeaturedPage, PageSeo],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
