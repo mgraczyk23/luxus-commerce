@@ -1,11 +1,11 @@
 import { MedusaRequest, MedusaResponse } from "@medusajs/framework/http"
-import { Modules } from "@medusajs/framework/utils"
+import { ContainerRegistrationKeys } from "@medusajs/framework/utils"
 import { sendEmail } from "../../../../../lib/email"
 
 const SALES = process.env.ADMIN_EMAIL ?? "sales@luxus-collection.com"
 
 const fmt = (cents: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(cents / 100)
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 }).format(cents / 100)
 
 function emailWrap(content: string) {
   return `<!DOCTYPE html>
@@ -35,17 +35,33 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     return res.status(400).json({ error: "type must be payment_received or shipped" })
   }
 
-  const orderModule = req.scope.resolve(Modules.ORDER)
+  const query = req.scope.resolve(ContainerRegistrationKeys.QUERY)
   let order: any
   try {
-    order = await orderModule.retrieveOrder(id, {
-      relations: ["items", "shipping_address", "billing_address"],
+    const { data: orders } = await query.graph({
+      entity: "order",
+      fields: [
+        "id",
+        "display_id",
+        "email",
+        "metadata",
+        "summary",
+        "shipping_address.first_name",
+        "shipping_address.last_name",
+        "billing_address.first_name",
+        "billing_address.last_name",
+        "items.title",
+        "items.unit_price",
+        "items.detail.quantity",
+      ],
+      filters: { id },
     })
+    order = orders?.[0]
   } catch {
     return res.status(404).json({ error: "Order not found" })
   }
 
-  if (!order.email) {
+  if (!order?.email) {
     return res.status(400).json({ error: "Order has no customer email" })
   }
 
@@ -53,16 +69,24 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const firstName  = order.shipping_address?.first_name || order.billing_address?.first_name || "Customer"
   const lastName   = order.shipping_address?.last_name  || order.billing_address?.last_name  || ""
   const fullName   = `${firstName} ${lastName}`.trim()
-  const total      = order.total ?? 0
-  const fflName    = (order.metadata?.ffl_dealer_name   as string) || ""
-  const fflAddr    = [order.metadata?.ffl_dealer_address1, order.metadata?.ffl_dealer_city, order.metadata?.ffl_dealer_state]
+
+  // Use summary (query.graph computed fields return 0)
+  const summary    = (order.summary as any) ?? {}
+  const total: number = summary.current_order_total ?? 0
+
+  const meta       = (order.metadata ?? {}) as Record<string, string>
+  const fflName    = meta.ffl_dealer_name || ""
+  const fflAddr    = [meta.ffl_dealer_address1, meta.ffl_dealer_city, meta.ffl_dealer_state]
     .filter(Boolean).join(", ")
 
-  const itemRows = (order.items ?? []).map((item: any) => `
+  const itemRows = (order.items ?? []).map((item: any) => {
+    const qty = item.detail?.quantity ?? 1
+    return `
     <tr>
       <td style="padding:8px 16px;font-size:12px;color:#1a1a1a;font-family:Arial,sans-serif;border-bottom:1px solid #f0ede8">${String(item.title).replace(/</g, "&lt;")}</td>
-      <td style="padding:8px 16px;font-size:12px;color:#1a1a1a;font-family:Arial,sans-serif;border-bottom:1px solid #f0ede8;text-align:right">${fmt((item.unit_price ?? 0) * (item.quantity ?? 1))}</td>
-    </tr>`).join("")
+      <td style="padding:8px 16px;font-size:12px;color:#1a1a1a;font-family:Arial,sans-serif;border-bottom:1px solid #f0ede8;text-align:right">${fmt((item.unit_price ?? 0) * qty)}</td>
+    </tr>`
+  }).join("")
 
   const itemsBlock = itemRows ? `
     <div style="padding:4px 28px 0">
