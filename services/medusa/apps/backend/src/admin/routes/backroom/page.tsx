@@ -4,15 +4,21 @@ import { useEffect, useState } from "react"
 import { adminFetch } from "../../lib/api"
 
 const ROOMS = [
-  { slug: "master",   name: "Master Backroom", envVar: "BACKROOM_PASS_MASTER" },
-  { slug: "backroom", name: "Backroom",         envVar: "BACKROOM_PASS_BACKROOM" },
-  { slug: "vip",      name: "VIP",              envVar: "BACKROOM_PASS_VIP" },
-  { slug: "reserve",  name: "Reserve",          envVar: "BACKROOM_PASS_RESERVE" },
-  { slug: "special",  name: "Special",          envVar: "BACKROOM_PASS_SPECIAL" },
-  { slug: "unicorn",  name: "Unicorn",          envVar: "BACKROOM_PASS_UNICORN" },
+  { slug: "master",   name: "Master Backroom", desc: "Staff view — all private items across all rooms" },
+  { slug: "backroom", name: "Backroom",         desc: "General private listing" },
+  { slug: "vip",      name: "VIP",              desc: "VIP client access" },
+  { slug: "reserve",  name: "Reserve",          desc: "Reserve collection" },
+  { slug: "special",  name: "Special",          desc: "Special collection" },
+  { slug: "unicorn",  name: "Unicorn",          desc: "Unicorn room" },
 ]
 
-type RoomRow = { slug: string; has_password: boolean; input: string; saving: boolean; saved: boolean }
+type RoomRow = {
+  slug: string
+  has_password: boolean
+  input: string
+  saving: boolean
+  saved: boolean
+}
 
 const BackroomPage = () => {
   const [rows, setRows] = useState<RoomRow[]>(
@@ -40,6 +46,7 @@ const BackroomPage = () => {
   const handleSave = async (slug: string) => {
     const row = rows.find(r => r.slug === slug)
     if (!row?.input.trim()) return
+
     setRows(prev => prev.map(r => r.slug === slug ? { ...r, saving: true } : r))
     try {
       await adminFetch("/admin/backroom-passwords", {
@@ -61,38 +68,8 @@ const BackroomPage = () => {
       <div>
         <Heading level="h1">Private Room Passwords</Heading>
         <Text className="text-ui-fg-muted mt-1">
-          Manage access passwords for each private room.
-        </Text>
-      </div>
-
-      {/* Fast-auth instructions */}
-      <Container className="p-5 border border-ui-border-strong bg-ui-bg-subtle">
-        <Text size="small" weight="plus" className="mb-2">
-          ⚡ Fast Login — Vercel Environment Variables
-        </Text>
-        <Text size="xsmall" className="text-ui-fg-muted mb-3">
-          Set these environment variables in your Vercel project dashboard for instant login
-          (no server round-trip). Go to{" "}
-          <span className="font-mono">vercel.com → Project → Settings → Environment Variables</span>.
-        </Text>
-        <div className="space-y-1">
-          {ROOMS.map(r => (
-            <div key={r.slug} className="flex items-center gap-2">
-              <Text size="xsmall" className="font-mono text-ui-fg-base w-52">{r.envVar}</Text>
-              <Text size="xsmall" className="text-ui-fg-muted">= your-password-here</Text>
-            </div>
-          ))}
-        </div>
-        <Text size="xsmall" className="text-ui-fg-muted mt-3">
-          After adding env vars, redeploy the storefront. Login will be instant once deployed.
-        </Text>
-      </Container>
-
-      {/* Legacy Medusa password storage (fallback if env vars not set) */}
-      <div>
-        <Text size="small" weight="plus" className="mb-1">Fallback Passwords (Medusa Database)</Text>
-        <Text size="xsmall" className="text-ui-fg-muted mb-3">
-          Used only if the Vercel env var for that room is not set. Slower due to secure hashing.
+          Set or change the access password for each private room.
+          Passwords are stored as secure hashes — they cannot be recovered, only reset.
         </Text>
       </div>
 
@@ -109,13 +86,17 @@ const BackroomPage = () => {
                     <div className="flex items-center gap-2 mb-0.5">
                       <Text size="small" weight="plus">{room.name}</Text>
                       {row.has_password
-                        ? <Badge size="2xsmall" color="green">Set</Badge>
-                        : <Badge size="2xsmall" color="orange">Not set</Badge>
+                        ? <Badge size="2xsmall" color="green">Password set</Badge>
+                        : <Badge size="2xsmall" color="orange">No password</Badge>
                       }
                       {row.saved && <Badge size="2xsmall" color="blue">Saved</Badge>}
                     </div>
-                    <Text size="xsmall" className="text-ui-fg-muted font-mono">
-                      /private/{room.slug}/login
+                    <Text size="xsmall" className="text-ui-fg-muted">{room.desc}</Text>
+                    <Text size="xsmall" className="text-ui-fg-muted mt-0.5">
+                      Login URL:{" "}
+                      <span className="font-mono text-ui-fg-base">
+                        /private/{room.slug}/login
+                      </span>
                     </Text>
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
