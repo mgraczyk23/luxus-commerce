@@ -105,6 +105,7 @@ services:
       ELAVON_PIN: ${ELAVON_PIN}
       ELAVON_ENV: ${ELAVON_ENV}
       ELAVON_PROXY_SECRET: ${ELAVON_PROXY_SECRET}
+      BACKROOM_JWT_SECRET: ${BACKROOM_JWT_SECRET}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -153,13 +154,17 @@ services:
     container_name: luxus-mcp
     restart: unless-stopped
     depends_on:
-      postgres:
-        condition: service_healthy
+      medusa:
+        condition: service_started
+      payload:
+        condition: service_started
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${MEDUSA_DB_NAME}?sslmode=disable
       MCP_PORT: 3002
       RATE_LIMIT_RPM: 60
+      MEDUSA_URL: http://medusa:9000
+      MEDUSA_PUBLISHABLE_KEY: ${MEDUSA_PUBLISHABLE_KEY}
+      PAYLOAD_URL: http://payload:3000
     ports:
       - '127.0.0.1:3002:3002'
     deploy:
