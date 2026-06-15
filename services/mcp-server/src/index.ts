@@ -94,6 +94,7 @@ function serializeProduct(p: Record<string, unknown>, full = false) {
     caliber:     getAttribute(p, 'caliber'),
     action:      getAttribute(p, 'action'),
     condition:   getAttribute(p, 'condition'),
+    contact_for_pricing: (p.metadata as Record<string, unknown>)?.contact_for_pricing === 'true' || (p.metadata as Record<string, unknown>)?.contact_for_pricing === true,
     price_cents: price?.amount ?? null,
     price_usd:   price?.amount ? `$${((price.amount as number) / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : null,
     in_stock:    variant.inventory_quantity ? Number(variant.inventory_quantity) > 0 : false,
