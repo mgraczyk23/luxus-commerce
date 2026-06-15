@@ -2,9 +2,9 @@ import express, { Request, Response } from 'express'
 import { randomUUID } from 'crypto'
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/mcp.js')
+const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js')
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/streamableHttp.js')
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js')
 
 import { z } from 'zod'
 

@@ -5,9 +5,9 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { McpServer } = require('@modelcontextprotocol/sdk/dist/cjs/server/mcp.js');
+const { McpServer } = require('@modelcontextprotocol/sdk/server/mcp.js');
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/dist/cjs/server/streamableHttp.js');
+const { StreamableHTTPServerTransport } = require('@modelcontextprotocol/sdk/server/streamableHttp.js');
 const zod_1 = require("zod");
 // ── Config ──────────────────────────────────────────────────────────────────
 const PORT = Number(process.env.MCP_PORT ?? 3002);
@@ -85,6 +85,7 @@ function serializeProduct(p, full = false) {
         caliber: getAttribute(p, 'caliber'),
         action: getAttribute(p, 'action'),
         condition: getAttribute(p, 'condition'),
+        contact_for_pricing: p.metadata?.contact_for_pricing === 'true' || p.metadata?.contact_for_pricing === true,
         price_cents: price?.amount ?? null,
         price_usd: price?.amount ? `$${(price.amount / 100).toLocaleString('en-US', { minimumFractionDigits: 0 })}` : null,
         in_stock: variant.inventory_quantity ? Number(variant.inventory_quantity) > 0 : false,
