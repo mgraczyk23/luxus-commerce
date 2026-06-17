@@ -130,6 +130,21 @@ export const SiteSettings: GlobalConfig = {
       },
     },
     {
+      name: 'productCards',
+      type: 'group',
+      label: 'Product Cards',
+      admin: { description: 'Controls how product cards appear across all shop and listing pages.' },
+      fields: [
+        {
+          name: 'showBadges',
+          type: 'checkbox',
+          label: 'Show badges on product cards',
+          defaultValue: true,
+          admin: { description: 'When enabled, each product card shows a category badge (top-left) and an Available / Unavailable badge (top-right). Uncheck to hide both badges sitewide.' },
+        },
+      ],
+    },
+    {
       name: 'announcement',
       type: 'group',
       label: 'Announcement Bar',
