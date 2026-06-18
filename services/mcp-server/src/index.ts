@@ -41,10 +41,19 @@ setInterval(() => {
 // ── Backroom filter ──────────────────────────────────────────────────────────
 function isBackroom(product: Record<string, unknown>): boolean {
   const meta = (product.metadata ?? {}) as Record<string, unknown>
+  // Must match the storefront/sitemap definition of "hidden from public"
+  // (master_backroom + legacy backroom_hidden) AND exclude anything assigned to
+  // ANY private room. These metadata keys are the real ones written by the admin
+  // product-room widget / import route — the previous keys (is_backroom_hidden,
+  // backroom, is_private_room) never existed, so nothing was being filtered.
   return (
-    meta.is_backroom_hidden === 'true' ||
-    meta.backroom === 'true' ||
-    meta.is_private_room === 'true'
+    meta.master_backroom === 'true' ||
+    meta.backroom_hidden === 'true' ||
+    meta.room_backroom === 'true' ||
+    meta.room_vip === 'true' ||
+    meta.room_reserve === 'true' ||
+    meta.room_special === 'true' ||
+    meta.room_unicorn === 'true'
   )
 }
 

@@ -7,8 +7,13 @@
 
 const MEDUSA_URL    = process.env.MEDUSA_URL    ?? 'http://localhost:9000'
 const MEILI_URL     = process.env.MEILI_URL     ?? 'http://localhost:7700'
-const MEILI_KEY     = process.env.MEILI_KEY     ?? '8e0f02df8818205927ad4c5fd23497ea55876bf5dc8b8269cc3f8274ad15306a'
+const MEILI_KEY     = process.env.MEILI_KEY     ?? ''   // required — never hardcode
 const MEDUSA_KEY    = process.env.MEDUSA_API_KEY ?? ''
+
+if (!MEILI_KEY) {
+  console.error('MEILI_KEY env var is required.')
+  process.exit(1)
+}
 
 const FIELDS = [
   'id', 'handle', 'title', 'subtitle', 'thumbnail',
