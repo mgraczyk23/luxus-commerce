@@ -20,5 +20,28 @@ export default async function productChangedHandler({ event }: SubscriberArgs<an
 }
 
 export const config: SubscriberConfig = {
-  event: ["product.product.created", "product.product.updated", "product.product.deleted"],
+  // Any of these means catalog data OR stock/availability changed — tell the
+  // storefront to revalidate its cached product data immediately. The handler
+  // ignores the specific name and just triggers a "products" revalidation.
+  event: [
+    // Catalog (price, title, new/removed products, categories, collections)
+    "product.product.created",
+    "product.product.updated",
+    "product.product.deleted",
+    // Inventory — manual stock edits / availability changes in admin
+    "inventory-item.created",
+    "inventory-item.updated",
+    "inventory-item.deleted",
+    "inventory-level.created",
+    "inventory-level.updated",
+    "inventory-level.deleted",
+    // Reservations — created when an order is placed, released on cancel
+    "reservation-item.created",
+    "reservation-item.updated",
+    "reservation-item.deleted",
+    // Orders — a sale reserves stock; cancel/complete changes availability
+    "order.placed",
+    "order.canceled",
+    "order.completed",
+  ],
 }
