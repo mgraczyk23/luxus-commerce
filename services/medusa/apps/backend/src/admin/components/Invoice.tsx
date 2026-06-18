@@ -244,16 +244,18 @@ export default function Invoice({ order, company = DEFAULT_COMPANY, banking = DE
 
 function PartyBlock({ label, data }: { label: string; data?: InvoiceParty }) {
   if (!data) return <div className="inv-party"><div className="inv-label">{label}</div></div>
+  const lines = [data.email, data.phone, data.line1, data.line2].filter(Boolean) as string[]
   return (
     <div className="inv-party">
       <div className="inv-label">{label}</div>
-      <div className="inv-party-name">{data.name}</div>
-      <div className="inv-sub">
-        {data.line1}<br/>
-        {data.line2}<br/>
-        {data.phone}<br/>
-        {data.email}
-      </div>
+      {data.name && <div className="inv-party-name">{data.name}</div>}
+      {lines.length > 0 && (
+        <div className="inv-sub">
+          {lines.map((ln, i) => (
+            <React.Fragment key={i}>{ln}{i < lines.length - 1 && <br/>}</React.Fragment>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

@@ -32,13 +32,15 @@ const CreateSalePage = () => {
   const [buyerState, setBuyerState] = useState("")
   const [buyerZip, setBuyerZip]     = useState("")
 
-  // FFL Transfer Dealer (Ship To)
-  const [fflName, setFflName]       = useState("")
-  const [fflPhone, setFflPhone]     = useState("")
-  const [fflAddr1, setFflAddr1]     = useState("")
-  const [fflCity, setFflCity]       = useState("")
-  const [fflState, setFflState]     = useState("")
-  const [fflZip, setFflZip]         = useState("")
+  // FFL Transfer Dealer (Ship To) — stored in order.metadata, NOT shipping_address
+  const [fflName, setFflName]               = useState("")
+  const [fflAddr1, setFflAddr1]             = useState("")
+  const [fflCity, setFflCity]               = useState("")
+  const [fflState, setFflState]             = useState("")
+  const [fflZip, setFflZip]                 = useState("")
+  const [fflContactName, setFflContactName] = useState("")
+  const [fflContactPhone, setFflContactPhone] = useState("")
+  const [fflContactEmail, setFflContactEmail] = useState("")
 
   // Product search & line items
   const [searchQuery, setSearchQuery]     = useState("")
@@ -47,10 +49,10 @@ const CreateSalePage = () => {
   const [items, setItems]                 = useState<LineItem[]>([])
 
   // Sale details
-  const [shippedVia, setShippedVia]         = useState("UPS")
-  const [terms, setTerms]                   = useState("Due on Receipt")
-  const [paymentMethod, setPaymentMethod]   = useState("Wire Transfer")
-  const [notes, setNotes]                   = useState("")
+  const [shippedVia, setShippedVia]       = useState("UPS")
+  const [terms, setTerms]                 = useState("Due on Receipt")
+  const [paymentMethod, setPaymentMethod] = useState("Wire Transfer")
+  const [notes, setNotes]                 = useState("")
 
   const [submitting, setSubmitting] = useState(false)
 
@@ -95,6 +97,7 @@ const CreateSalePage = () => {
 
   const handleSubmit = async () => {
     if (!buyerEmail.trim()) { toast.error("Buyer email is required"); return }
+    if (!buyerName.trim())  { toast.error("Buyer name is required"); return }
     if (items.length === 0) { toast.error("Add at least one item"); return }
     if (items.some((it) => !it.price || isNaN(parseFloat(it.price)))) {
       toast.error("Enter a price for each item")
@@ -107,60 +110,89 @@ const CreateSalePage = () => {
       const regionId = regions?.[0]?.id
       if (!regionId) throw new Error("No region configured — add a region in Medusa admin first")
 
-      const splitName = (name: string) => {
-        const parts = name.trim().split(/\s+/)
-        return { first: parts[0] ?? "", last: parts.slice(1).join(" ") || (parts[0] ?? "") }
+      const nameParts = buyerName.trim().split(/\s+/)
+      const firstName = nameParts[0] ?? ""
+      const lastName  = nameParts.slice(1).join(" ") || firstName
+
+      // billing_address = buyer's home address
+      const billingAddress = {
+        first_name:   firstName,
+        last_name:    lastName,
+        address_1:    buyerAddr1.trim() || undefined,
+        city:         buyerCity.trim()  || undefined,
+        province:     buyerState.trim().toLowerCase() || undefined,
+        postal_code:  buyerZip.trim()   || undefined,
+        phone:        buyerPhone.trim() || undefined,
+        country_code: "us",
       }
-      const buyer = splitName(buyerName)
-      const ffl   = splitName(fflName)
+
+      // shipping_address = buyer's address (used by Medusa tax engine, same as billing)
+      const shippingAddress = buyerState.trim() ? {
+        first_name:   firstName,
+        last_name:    lastName,
+        address_1:    buyerAddr1.trim()  || undefined,
+        city:         buyerCity.trim()   || undefined,
+        province:     buyerState.trim().toLowerCase(),
+        postal_code:  buyerZip.trim()    || undefined,
+        country_code: "us",
+      } : undefined
+
+      // All FFL dealer info goes into metadata (matches what invoice mapOrder() reads)
+      const metadata: Record<string, string> = {}
+
+      // Buyer address in metadata (invoice uses these as primary source)
+      if (buyerAddr1.trim())  metadata.buyer_address1 = buyerAddr1.trim()
+      if (buyerCity.trim())   metadata.buyer_city     = buyerCity.trim()
+      if (buyerState.trim())  metadata.buyer_state    = buyerState.trim().toUpperCase()
+      if (buyerZip.trim())    metadata.buyer_zip      = buyerZip.trim()
+
+      // FFL dealer (invoice mapOrder reads these for Ship To block)
+      if (fflName.trim())         metadata.ffl_dealer_name     = fflName.trim()
+      if (fflAddr1.trim())        metadata.ffl_dealer_address1 = fflAddr1.trim()
+      if (fflCity.trim())         metadata.ffl_dealer_city     = fflCity.trim()
+      if (fflState.trim())        metadata.ffl_dealer_state    = fflState.trim().toUpperCase()
+      if (fflZip.trim())          metadata.ffl_dealer_zip      = fflZip.trim()
+      if (fflContactName.trim())  metadata.ffl_contact_name    = fflContactName.trim()
+      if (fflContactPhone.trim()) metadata.ffl_contact_phone   = fflContactPhone.trim()
+      if (fflContactEmail.trim()) metadata.ffl_contact_email   = fflContactEmail.trim()
+      metadata.ffl_is_manual = "true"
+
+      // Sale details
+      if (shippedVia.trim())    metadata.shipped_via    = shippedVia.trim()
+      if (terms.trim())         metadata.terms          = terms.trim()
+      if (paymentMethod.trim()) metadata.payment_method = paymentMethod.trim()
+      if (notes.trim())         metadata.notes          = notes.trim()
 
       const body = {
-        email: buyerEmail.trim(),
-        region_id: regionId,
+        email:            buyerEmail.trim(),
+        region_id:        regionId,
+        billing_address:  billingAddress,
+        shipping_address: shippingAddress,
         items: items.map((it) => ({
           variant_id: it.variantId,
-          quantity: it.qty,
+          quantity:   it.qty,
           unit_price: Math.round(parseFloat(it.price) * 100),
-          metadata: it.serialNumber ? { serial_number: it.serialNumber } : undefined,
+          metadata:   it.serialNumber ? { serial_number: it.serialNumber } : undefined,
         })),
-        billing_address: {
-          first_name: buyer.first,
-          last_name: buyer.last,
-          address_1: buyerAddr1,
-          city: buyerCity,
-          province: buyerState,
-          postal_code: buyerZip,
-          phone: buyerPhone,
-          country_code: "us",
-        },
-        shipping_address: {
-          first_name: ffl.first,
-          last_name: ffl.last,
-          address_1: fflAddr1,
-          city: fflCity,
-          province: fflState,
-          postal_code: fflZip,
-          phone: fflPhone,
-          country_code: "us",
-          metadata: undefined,
-        },
-        metadata: {
-          shipped_via: shippedVia || undefined,
-          terms: terms || undefined,
-          payment_method: paymentMethod || undefined,
-          ...(notes.trim() ? { notes: notes.trim() } : {}),
-        },
+        metadata,
       }
 
-      const result = await adminFetch<any>("/admin/draft-orders", {
+      // Step 1: create draft order
+      const draftResult = await adminFetch<any>("/admin/draft-orders", {
         method: "POST",
         body: JSON.stringify(body),
       })
 
-      const orderId =
-        result.draft_order?.order_id ??
-        result.draft_order?.id ??
-        result.order?.id
+      const draftId = draftResult.draft_order?.id
+      if (!draftId) throw new Error("Draft order created but no ID returned")
+
+      // Step 2: convert to a real order so it appears under Orders (not Draft Orders)
+      const orderResult = await adminFetch<any>(
+        `/admin/draft-orders/${draftId}/convert-to-order`,
+        { method: "POST" }
+      )
+
+      const orderId = orderResult.order?.id ?? draftId
 
       toast.success("Sale created")
       if (orderId) navigate(`/orders/${orderId}/invoice`)
@@ -175,7 +207,7 @@ const CreateSalePage = () => {
     <div className="flex flex-col gap-6 max-w-4xl mx-auto py-8 px-6">
       <div>
         <Heading level="h1">Create Sale</Heading>
-        <Text className="text-ui-fg-muted mt-1">Record a manual or in-person firearms sale</Text>
+        <Text className="text-ui-fg-muted mt-1">Record a manual or phone sale — opens invoice immediately after saving</Text>
       </div>
 
       {/* ── Buyer ── */}
@@ -186,7 +218,7 @@ const CreateSalePage = () => {
         </div>
         <div className="grid grid-cols-2 gap-4 px-6 py-4">
           <div className="col-span-2">
-            <Label htmlFor="buyer-name">Full Name</Label>
+            <Label htmlFor="buyer-name">Full Name <span className="text-ui-tag-red-text">*</span></Label>
             <Input id="buyer-name" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} placeholder="John Smith" className="mt-1.5" />
           </div>
           <div>
@@ -225,13 +257,9 @@ const CreateSalePage = () => {
           <Text size="small" className="text-ui-fg-muted mt-0.5">Ship To — must be a licensed FFL dealer</Text>
         </div>
         <div className="grid grid-cols-2 gap-4 px-6 py-4">
-          <div>
+          <div className="col-span-2">
             <Label htmlFor="ffl-name">Dealer Name</Label>
             <Input id="ffl-name" value={fflName} onChange={(e) => setFflName(e.target.value)} placeholder="Smith's Gun Shop" className="mt-1.5" />
-          </div>
-          <div>
-            <Label htmlFor="ffl-phone">Phone</Label>
-            <Input id="ffl-phone" value={fflPhone} onChange={(e) => setFflPhone(e.target.value)} placeholder="(555) 000-0000" className="mt-1.5" />
           </div>
           <div className="col-span-2">
             <Label htmlFor="ffl-addr">Address</Label>
@@ -250,6 +278,22 @@ const CreateSalePage = () => {
               <Label htmlFor="ffl-zip">ZIP</Label>
               <Input id="ffl-zip" value={fflZip} onChange={(e) => setFflZip(e.target.value)} placeholder="34232" className="mt-1.5" />
             </div>
+          </div>
+          {/* Optional contact at the FFL */}
+          <div className="col-span-2 pt-2 border-t border-ui-border-base">
+            <Text size="small" className="text-ui-fg-muted mb-3">Dealer Contact (optional — speeds up transfer)</Text>
+          </div>
+          <div>
+            <Label htmlFor="ffl-contact-name">Contact Name</Label>
+            <Input id="ffl-contact-name" value={fflContactName} onChange={(e) => setFflContactName(e.target.value)} placeholder="Jane Doe" className="mt-1.5" />
+          </div>
+          <div>
+            <Label htmlFor="ffl-contact-phone">Contact Phone</Label>
+            <Input id="ffl-contact-phone" value={fflContactPhone} onChange={(e) => setFflContactPhone(e.target.value)} placeholder="(555) 000-0000" className="mt-1.5" />
+          </div>
+          <div className="col-span-2">
+            <Label htmlFor="ffl-contact-email">Contact Email</Label>
+            <Input id="ffl-contact-email" type="email" value={fflContactEmail} onChange={(e) => setFflContactEmail(e.target.value)} placeholder="dealer@example.com" className="mt-1.5" />
           </div>
         </div>
       </Container>
@@ -378,10 +422,11 @@ const CreateSalePage = () => {
               <option value="Wire Transfer">Wire Transfer</option>
               <option value="Check">Check</option>
               <option value="Credit/Debit">Credit/Debit</option>
+              <option value="Cash">Cash</option>
             </select>
             {paymentMethod === "Credit/Debit" && (
               <p className="mt-1.5 text-xs text-ui-fg-muted">
-                Remember to send the buyer a payment link via your processor before shipment.
+                Remember to process the card via your terminal before shipping.
               </p>
             )}
           </div>

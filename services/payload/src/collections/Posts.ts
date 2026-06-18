@@ -1,5 +1,16 @@
 import type { CollectionConfig } from 'payload'
 
+const revalidate = async (slug?: string) => {
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'https://dev.luxus-collection.com'
+  const secret = process.env.REVALIDATE_SECRET ?? ''
+  const base = `${storefrontUrl}/api/revalidate?secret=${encodeURIComponent(secret)}`
+  await Promise.all([
+    fetch(`${base}&tag=posts`).catch(() => {}),
+    fetch(`${base}&tag=featured-page`).catch(() => {}),
+    ...(slug ? [fetch(`${base}&tag=post-${slug}`).catch(() => {})] : []),
+  ])
+}
+
 export const Posts: CollectionConfig = {
   slug: 'posts',
   admin: {
@@ -173,4 +184,8 @@ export const Posts: CollectionConfig = {
       },
     },
   ],
+  hooks: {
+    afterChange: [async ({ doc }) => { await revalidate(doc?.slug) }],
+    afterDelete: [async ({ doc }) => { await revalidate(doc?.slug) }],
+  },
 }

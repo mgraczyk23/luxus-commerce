@@ -57,8 +57,6 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     [INVENTORY_MANAGEMENT_MODULE]: { inventory_info_id: info.id },
   })
 
-  await syncBackroomToMetadata(id, !!(req.body as any).is_master_backroom || !!(req.body as any).is_backroom)
-
   res.status(201).json({ inventory_info: info })
 }
 
@@ -86,8 +84,6 @@ export async function PUT(req: MedusaRequest, res: MedusaResponse) {
   // Array-with-id form is required — selector+data form silently no-ops in this Medusa version
   const result = await (service as any).updateInventoryInfos([{ id: existing.id, ...updateData }])
   const updated = Array.isArray(result) ? result[0] : result
-
-  await syncBackroomToMetadata(id, !!updated.is_master_backroom || !!updated.is_backroom)
 
   res.json({ inventory_info: updated })
 }

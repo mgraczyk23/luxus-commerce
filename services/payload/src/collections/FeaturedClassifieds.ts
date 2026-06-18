@@ -1,5 +1,11 @@
 import type { CollectionConfig } from 'payload'
 
+const revalidate = async () => {
+  const storefrontUrl = process.env.NEXT_PUBLIC_STOREFRONT_URL ?? 'https://dev.luxus-collection.com'
+  const secret = process.env.REVALIDATE_SECRET ?? ''
+  await fetch(`${storefrontUrl}/api/revalidate?tag=featured-page&secret=${encodeURIComponent(secret)}`).catch(() => {})
+}
+
 export const FeaturedClassifieds: CollectionConfig = {
   slug: 'featured-classifieds',
   admin: {
@@ -56,4 +62,8 @@ export const FeaturedClassifieds: CollectionConfig = {
     { name: 'sortOrder',   type: 'number',   label: 'Sort Order', admin: { description: 'Lower numbers appear first.' } },
     { name: 'active',      type: 'checkbox', label: 'Active / Visible', defaultValue: true },
   ],
+  hooks: {
+    afterChange: [async () => { await revalidate() }],
+    afterDelete: [async () => { await revalidate() }],
+  },
 }

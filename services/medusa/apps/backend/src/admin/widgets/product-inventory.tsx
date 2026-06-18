@@ -18,8 +18,6 @@ type InventoryInfo = {
   importer_name: string | null
   importer_mark: string | null
   importer_mark_location: string | null
-  is_master_backroom: boolean
-  is_backroom: boolean
 }
 
 const empty: InventoryInfo = {
@@ -35,8 +33,6 @@ const empty: InventoryInfo = {
   importer_name: "",
   importer_mark: "",
   importer_mark_location: "",
-  is_master_backroom: false,
-  is_backroom: false,
 }
 
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -230,35 +226,6 @@ const ProductInventoryWidget = ({ data }: DetailWidgetProps<AdminProduct>) => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-4 px-6 py-4">
-        <SectionLabel>Backroom / VIP</SectionLabel>
-        <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-3 py-2">
-          <div>
-            <Label htmlFor="inv-master-backroom">Master Backroom</Label>
-            <Text size="xsmall" className="text-ui-fg-muted">
-              Hidden from main store, not shown in VIP
-            </Text>
-          </div>
-          <Switch
-            id="inv-master-backroom"
-            checked={info.is_master_backroom}
-            onCheckedChange={(v) => set("is_master_backroom", v)}
-          />
-        </div>
-        <div className="flex items-center justify-between rounded-lg border border-ui-border-base px-3 py-2">
-          <div>
-            <Label htmlFor="inv-backroom">Backroom / VIP</Label>
-            <Text size="xsmall" className="text-ui-fg-muted">
-              Actively displayed in the VIP area
-            </Text>
-          </div>
-          <Switch
-            id="inv-backroom"
-            checked={info.is_backroom}
-            onCheckedChange={(v) => set("is_backroom", v)}
-          />
-        </div>
-      </div>
     </Container>
   )
 }

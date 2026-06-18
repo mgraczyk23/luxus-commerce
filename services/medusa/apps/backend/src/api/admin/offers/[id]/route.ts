@@ -7,6 +7,7 @@ import {
   offerRejectedEmail,
   offerCounteredEmail,
 } from "../../../../lib/email-templates"
+import crypto from "crypto"
 
 export async function GET(req: MedusaRequest, res: MedusaResponse) {
   const service  = req.scope.resolve(OFFERS_MODULE) as InstanceType<typeof OffersService>
@@ -40,6 +41,14 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
   if (counter_amount != null) updates.counter_amount = counter_amount
   if (admin_notes    != null) updates.admin_notes    = admin_notes
 
+  // On accept: generate a one-time checkout token (72-hr window)
+  let checkoutToken: string | undefined
+  if (status === "accepted") {
+    checkoutToken                       = crypto.randomUUID()
+    updates.checkout_token              = checkoutToken
+    updates.checkout_token_expires_at   = new Date(Date.now() + 72 * 60 * 60 * 1000)
+  }
+
   if (Object.keys(updates).length === 0) {
     return res.status(422).json({ error: "No fields to update" })
   }
@@ -49,15 +58,18 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
   // Send customer notification — fire and forget
   if (status) {
     try {
-      const storefrontUrl = process.env.STOREFRONT_URL ?? "https://luxus-collection.com"
+      const storefrontUrl  = process.env.STOREFRONT_URL ?? "https://luxus-collection.com"
+      const secret         = process.env.OFFER_TOKEN_SECRET ?? ""
       let emailPayload: { subject: string; html: string } | null = null
 
-      if (status === "accepted") {
+      if (status === "accepted" && checkoutToken) {
+        const checkoutUrl = `${storefrontUrl}/checkout/offer/${checkoutToken}`
         emailPayload = offerAcceptedEmail({
           productTitle:   offer.product_title,
           productHandle:  offer.product_handle,
           buyerFirstName: offer.first_name,
           offerAmount:    offer.offer_amount,
+          checkoutUrl,
           storefrontUrl,
         })
       } else if (status === "rejected") {
@@ -69,12 +81,16 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
           storefrontUrl,
         })
       } else if (status === "countered" && counter_amount) {
+        // HMAC signature so buyer can accept without an account
+        const authSig  = crypto.createHmac("sha256", secret).update(id).digest("hex")
+        const acceptUrl = `${storefrontUrl}/offer/${id}/accept-counter?auth=${authSig}`
         emailPayload = offerCounteredEmail({
           productTitle:   offer.product_title,
           productHandle:  offer.product_handle,
           buyerFirstName: offer.first_name,
           originalAmount: offer.offer_amount,
           counterAmount:  counter_amount,
+          acceptUrl,
           storefrontUrl,
         })
       }

@@ -25,8 +25,6 @@ import type {
   ProviderWebhookPayload,
   WebhookActionResult,
 } from "@medusajs/types"
-import crypto from "crypto"
-
 type ElavonConfig = {
   merchant_id: string
   user_id: string
@@ -49,60 +47,37 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
   }
 
   async initiatePayment(input: InitiatePaymentInput): Promise<InitiatePaymentOutput> {
-    const { amount, currency_code, data, context } = input
+    const { amount, data, context } = input
     const cartId: string =
       (data as any)?.cart_id ??
       (context as any)?.cart_id ??
       (context as any)?.resource_id ??
       "unknown"
-    const baseReturnUrl: string =
-      (data as any)?.return_url ??
-      `${process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com"}/api/elavon/complete`
-
-    // Sign the cart ID so the callback can verify it came from a legitimate token request
-    const sig = crypto
-      .createHmac("sha256", process.env.ELAVON_PROXY_SECRET ?? "")
-      .update(cartId)
-      .digest("hex")
-      .slice(0, 32)
-    const returnUrl = `${baseReturnUrl}?cart=${encodeURIComponent(cartId)}&sig=${sig}`
 
     const amountStr = (Number(amount) / 100).toFixed(2)
 
-    // Invoice number: strip prefix, first 25 chars of ULID — matches Converge VT exactly
-    const invoiceNumber = cartId.replace(/^cart_/, "").slice(0, 25)
+    // LXC- + first 8 chars of ULID = 12 chars, well within Converge's 25-char limit
+    const invoiceNumber = `LXC-${cartId.replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
 
     const billing = (data as any)?.billing_address ?? (context as any)?.billing_address
     const email = (data as any)?.email ?? (context as any)?.email ?? ""
 
-    // Cancel URL sends customer back to checkout rather than the Converge merchant portal
-    const storeFrontOrigin = baseReturnUrl.includes("://")
-      ? new URL(baseReturnUrl).origin
-      : (process.env.STOREFRONT_URL ?? "https://dev.luxus-collection.com")
-    const cancelUrl = `${storeFrontOrigin}/api/elavon/cancel`
-
     const params = new URLSearchParams({
       ssl_merchant_id: this.config.merchant_id,
-      ssl_user_id: this.config.user_id,
-      ssl_pin: this.config.pin,
+      ssl_user_id:     this.config.user_id,
+      ssl_pin:         this.config.pin,
       ssl_transaction_type: "ccsale",
-      ssl_amount: amountStr,
+      ssl_amount:       amountStr,
       ssl_invoice_number: invoiceNumber,
-      ssl_email: email,
-      ssl_first_name:
-        billing?.first_name ?? (context as any)?.customer?.first_name ?? "",
-      ssl_last_name:
-        billing?.last_name ?? (context as any)?.customer?.last_name ?? "",
-      // Pre-fill billing address on the hosted payment form
-      ssl_avs_address: billing?.address_1 ?? "",
-      ssl_avs_zip:     billing?.postal_code ?? "",
-      ssl_city:        billing?.city ?? "",
-      ssl_state:       (billing?.province ?? "").toUpperCase(),
-      ssl_country:     "US",
-      ssl_phone:       billing?.phone ?? "",
-      ssl_return_url: returnUrl,
-      ssl_cancel_url: cancelUrl,
-      ssl_show_form: "true",
+      ssl_email:        email,
+      ssl_first_name:   billing?.first_name ?? (context as any)?.customer?.first_name ?? "",
+      ssl_last_name:    billing?.last_name  ?? (context as any)?.customer?.last_name  ?? "",
+      ssl_avs_address:  billing?.address_1  ?? "",
+      ssl_avs_zip:      billing?.postal_code ?? "",
+      ssl_city:         billing?.city        ?? "",
+      ssl_state:        (billing?.province ?? "").toUpperCase(),
+      ssl_country:      "US",
+      ssl_phone:        billing?.phone       ?? "",
     })
 
     let text: string
@@ -116,11 +91,9 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
 
       if (!res.ok || text.trimStart().startsWith("<")) {
         const label =
-          res.status === 401
-            ? "Payment credentials rejected (401)"
-            : res.status === 403
-            ? "Hosted Payment Page not enabled on account (403)"
-            : `Payment server error (${res.status})`
+          res.status === 401 ? "Payment credentials rejected (401)" :
+          res.status === 403 ? "Hosted Payment Page not enabled on account (403)" :
+          `Payment server error (${res.status})`
         console.error(`[Elavon] initiatePayment HTTP ${res.status}:`, text.slice(0, 300))
         throw new Error(label)
       }
@@ -130,15 +103,12 @@ class ElavonPaymentService extends AbstractPaymentProvider<ElavonConfig> {
       throw new Error("Could not reach payment server")
     }
 
-    // Converge transaction_token returns the raw token as the response body (plain string)
     const token = text.trim()
     if (!token) throw new Error("Elavon returned no token")
 
-    const hostedUrl = `${this.baseUrl}?ssl_txn_auth_token=${encodeURIComponent(token)}`
-
     return {
       id: crypto.randomUUID(),
-      data: { hostedUrl, cartId, status: "pending" },
+      data: { token, cartId, status: "pending" },
     }
   }
 

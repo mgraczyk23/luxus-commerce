@@ -59,7 +59,27 @@ export default defineConfig({
       resolve: "./src/modules/offers",
     },
     {
-      resolve: "./src/modules/checkout-config",
+      resolve: "./src/modules/state-restrictions",
+    },
+    {
+      resolve: "./src/modules/backroom-access",
+    },
+    {
+      resolve: "@medusajs/medusa/payment",
+      options: {
+        providers: [
+          {
+            resolve: "./src/modules/elavon-payment",
+            id: "elavon",
+            options: {
+              merchant_id: process.env.ELAVON_MERCHANT_ID,
+              user_id: process.env.ELAVON_USER_ID,
+              pin: process.env.ELAVON_PIN,
+              env: process.env.ELAVON_ENV || "production",
+            },
+          },
+        ],
+      },
     },
   ],
 })

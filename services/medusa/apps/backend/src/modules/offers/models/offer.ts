@@ -13,9 +13,11 @@ const Offer = model.define("offer", {
   counter_amount:  model.bigNumber().nullable(),
   // pending | accepted | rejected | countered | expired
   status:          model.text().default("pending"),
-  message:         model.text().nullable(),
-  admin_notes:     model.text().nullable(),
-  expires_at:      model.dateTime().nullable(),
+  message:                    model.text().nullable(),
+  admin_notes:                model.text().nullable(),
+  expires_at:                 model.dateTime().nullable(),
+  checkout_token:             model.text().nullable(),
+  checkout_token_expires_at:  model.dateTime().nullable(),
 })
 
 export default Offer

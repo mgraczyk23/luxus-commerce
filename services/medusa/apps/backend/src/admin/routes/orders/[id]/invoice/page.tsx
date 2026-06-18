@@ -6,25 +6,36 @@ import { adminFetch } from "../../../../lib/api"
 const PAYLOAD_URL = "https://api.luxus-collection.com/cms"
 
 function mapOrder(order: any): InvoiceOrder {
-  const ba = order.billing_address
-  const sa = order.shipping_address
+  const ba   = order.billing_address
+  const sa   = order.shipping_address
+  const meta = (order.metadata ?? {}) as Record<string, string>
 
+  // Sold To — buyer's billing info
   const soldTo = ba
     ? {
-        name: [ba.first_name, ba.last_name].filter(Boolean).join(" ") || undefined,
-        line1: ba.address_1 || undefined,
-        line2: [ba.city, ba.province, ba.postal_code].filter(Boolean).join(", ") || undefined,
-        phone: ba.phone || undefined,
+        name:  [ba.first_name, ba.last_name].filter(Boolean).join(" ") || undefined,
         email: order.email || undefined,
+        phone: ba.phone || undefined,
+        line1: ba.address_1 || undefined,
+        line2: [ba.city, [ba.province?.toUpperCase(), ba.postal_code].filter(Boolean).join(" ")].filter(Boolean).join(", ") || undefined,
       }
-    : undefined
+    : order.email ? { email: order.email } : undefined
 
-  const shipTo = sa
+  // Ship To — FFL dealer from order metadata (preferred over shipping_address, which is
+  // set to the buyer's address for tax calculation purposes)
+  const fflName  = meta.ffl_dealer_name || [sa?.first_name, sa?.last_name].filter(Boolean).join(" ") || undefined
+  const fflLine1 = meta.ffl_dealer_address1 || sa?.address_1 || undefined
+  const fflLine2 = meta.ffl_dealer_city
+    ? [meta.ffl_dealer_city, [meta.ffl_dealer_state, meta.ffl_dealer_zip].filter(Boolean).join(" ")].filter(Boolean).join(", ")
+    : [sa?.city, [sa?.province?.toUpperCase(), sa?.postal_code].filter(Boolean).join(" ")].filter(Boolean).join(", ") || undefined
+  const fflContact = [meta.ffl_contact_name, meta.ffl_contact_phone, meta.ffl_contact_email].filter(Boolean).join(" · ")
+
+  const shipTo = (fflName || fflLine1 || fflLine2)
     ? {
-        name: [sa.first_name, sa.last_name].filter(Boolean).join(" ") || undefined,
-        line1: sa.address_1 || undefined,
-        line2: [sa.city, sa.province, sa.postal_code].filter(Boolean).join(", ") || undefined,
-        phone: sa.phone || undefined,
+        name:  fflName,
+        line1: fflLine1,
+        line2: fflLine2,
+        phone: fflContact || undefined,
       }
     : undefined
 

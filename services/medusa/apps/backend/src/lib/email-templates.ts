@@ -124,27 +124,29 @@ export function newOfferAdminEmail(d: NewOfferData): { subject: string; html: st
 }
 
 export type OfferAcceptedData = {
-  productTitle:  string
-  productHandle: string
+  productTitle:   string
+  productHandle:  string
   buyerFirstName: string
-  offerAmount:   number
-  storefrontUrl: string
+  offerAmount:    number
+  checkoutUrl:    string
+  storefrontUrl:  string
 }
 
 export function offerAcceptedEmail(d: OfferAcceptedData): { subject: string; html: string } {
   const content = `
     ${eyebrow("Offer Accepted")}
-    ${heading(`Congratulations, ${d.buyerFirstName}`)}
+    ${heading(`Congratulations, ${d.buyerFirstName}!`)}
     ${body(`We are pleased to accept your offer on the <strong>${d.productTitle}</strong>.`)}
     ${amountBox("Accepted Offer", d.offerAmount)}
-    ${body("A member of our team will contact you shortly to discuss the next steps, including payment arrangements and FFL transfer details.")}
+    ${body("Use the button below to complete your purchase. You'll provide your billing address, FFL transfer dealer, and payment details — the whole process takes under two minutes.")}
+    <p style="margin:0 0 10px;font-size:11px;color:#707076;line-height:1.6;">This checkout link is valid for <strong style="color:#1a1a1a;">72 hours</strong>. After that, please contact us to arrange an extension.</p>
+    ${cta("Complete Your Purchase →", d.checkoutUrl)}
     ${divider()}
-    ${body("If you have any questions in the meantime, please reply to this email and we will be happy to assist.")}
-    ${cta("View Product", `${d.storefrontUrl}/product/${d.productHandle}`)}
+    ${body("If you have any questions, please reply to this email and we will be happy to assist.")}
   `
 
   return {
-    subject: `Your Offer Was Accepted — ${d.productTitle}`,
+    subject: `Your Offer Was Accepted — Complete Your Purchase`,
     html:    layout(content),
   }
 }
@@ -180,6 +182,7 @@ export type OfferCounteredData = {
   buyerFirstName: string
   originalAmount: number
   counterAmount:  number
+  acceptUrl:      string
   storefrontUrl:  string
 }
 
@@ -204,10 +207,10 @@ export function offerCounteredEmail(d: OfferCounteredData): { subject: string; h
         </td>
       </tr>
     </table>
-    ${body("If you would like to accept this counter offer, please reply to this email or contact us directly and we will proceed with the sale.")}
+    ${body("If you'd like to accept this counter offer, click the button below to confirm and proceed directly to checkout.")}
+    ${cta("Accept Counter Offer & Checkout →", d.acceptUrl)}
     ${divider()}
-    ${body("This counter offer is valid for 48 hours. If we do not hear back, the item will remain available for other inquiries.")}
-    ${cta("View Product", `${d.storefrontUrl}/product/${d.productHandle}`)}
+    <p style="margin:0;font-size:11px;color:#707076;line-height:1.6;">This counter offer is valid for the duration of your original offer period. If you'd prefer to discuss further, reply to this email and we'll be happy to assist.</p>
   `
 
   return {
