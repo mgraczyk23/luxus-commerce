@@ -1,4 +1,20 @@
+# secrets / env — keep only the templates
 .env
+.env.*
+!.env.template
+!.env.example
+*.save
+
 node_modules/
 backups/
 *.log
+
+# build artifacts
+.next/
+.medusa/
+dist/
+build/
+
+# local prototypes / scratch (not part of the deployed backend)
+/Store-Front-Project/
+/Invoice.jsx
