@@ -53,7 +53,7 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
     return res.status(422).json({ error: "No fields to update" })
   }
 
-  const offer = await service.updateOffers({ id }, updates)
+  const offer = await service.updateOffers({ id, ...updates })
 
   // Send customer notification — fire and forget
   if (status) {

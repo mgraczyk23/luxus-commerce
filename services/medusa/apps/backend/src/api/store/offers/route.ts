@@ -44,27 +44,25 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
     expires_at,
   })
 
-  // Notify admin — fire and forget, don't fail the request if email fails
+  // Notify sales team — fire and forget, don't fail the request if email fails
   try {
-    const adminEmail = process.env.ADMIN_EMAIL
-    const adminUrl   = process.env.ADMIN_URL ?? "https://admin.luxus-collection.com"
-    if (adminEmail) {
-      const { subject, html } = newOfferAdminEmail({
-        productTitle:  product_title,
-        productHandle: product_handle,
-        buyerName:     [first_name, last_name].filter(Boolean).join(" "),
-        buyerEmail:    email,
-        buyerPhone:    phone ?? null,
-        offerAmount:   offer_amount,
-        listedPrice:   null,
-        message:       message ?? null,
-        adminUrl,
-        productId:     product_id,
-      })
-      await sendEmail({ to: adminEmail, subject, html, replyTo: email })
-    }
+    const salesEmail = process.env.SALES_EMAIL ?? "sales@luxus-collection.com"
+    const adminUrl   = process.env.ADMIN_URL ?? "https://api.luxus-collection.com"
+    const { subject, html } = newOfferAdminEmail({
+      productTitle:  product_title,
+      productHandle: product_handle,
+      buyerName:     [first_name, last_name].filter(Boolean).join(" "),
+      buyerEmail:    email,
+      buyerPhone:    phone ?? null,
+      offerAmount:   offer_amount,
+      listedPrice:   null,
+      message:       message ?? null,
+      adminUrl,
+      productId:     product_id,
+    })
+    await sendEmail({ to: salesEmail, subject, html, replyTo: email })
   } catch (err) {
-    console.error("[offers] admin email failed:", err)
+    console.error("[offers] sales email failed:", err)
   }
 
   return res.status(201).json({ offer })

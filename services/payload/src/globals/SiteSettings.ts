@@ -203,6 +203,12 @@ export const SiteSettings: GlobalConfig = {
           admin: { description: 'Found in GA4 → Admin → Data Streams → your stream. Format: G-XXXXXXXXXX', placeholder: 'G-XXXXXXXXXX' },
         },
         {
+          name: 'googleTagManagerId',
+          type: 'text',
+          label: 'Google Tag Manager — Container ID',
+          admin: { description: 'Found in Tag Manager → Admin → Container Settings. Format: GTM-XXXXXXX', placeholder: 'GTM-XXXXXXX' },
+        },
+        {
           name: 'postHogApiKey',
           type: 'text',
           label: 'PostHog — Project API Key',

@@ -56,9 +56,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const checkoutToken           = crypto.randomUUID()
   const checkoutTokenExpiresAt  = new Date(Date.now() + 72 * 60 * 60 * 1000)
 
-  const updated = await service.updateOffers({ id }, {
-    status:                   "accepted",
-    checkout_token:           checkoutToken,
+  const updated = await service.updateOffers({
+    id,
+    status:                    "accepted",
+    checkout_token:            checkoutToken,
     checkout_token_expires_at: checkoutTokenExpiresAt,
   })
 
