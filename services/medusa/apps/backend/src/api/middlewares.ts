@@ -17,6 +17,35 @@ function importApiKeyMiddleware(req: MedusaRequest, res: MedusaResponse, next: M
   next()
 }
 
+function productFeedAuthMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
+  const expectedUser = process.env.PRODUCT_FEED_USERNAME
+  const expectedPass = process.env.PRODUCT_FEED_PASSWORD
+
+  if (!expectedUser || !expectedPass) {
+    res.status(500).json({ message: "Product feed credentials are not configured on the server" })
+    return
+  }
+
+  const header = req.headers["authorization"] as string | undefined
+  const [scheme, encoded] = header?.split(" ") ?? []
+
+  if (scheme !== "Basic" || !encoded) {
+    res.setHeader("WWW-Authenticate", 'Basic realm="Product Feed"')
+    res.status(401).json({ message: "Basic authentication required" })
+    return
+  }
+
+  const [user, pass] = Buffer.from(encoded, "base64").toString("utf-8").split(":")
+
+  if (user !== expectedUser || pass !== expectedPass) {
+    res.setHeader("WWW-Authenticate", 'Basic realm="Product Feed"')
+    res.status(401).json({ message: "Invalid credentials" })
+    return
+  }
+
+  next()
+}
+
 function elavonProxyMiddleware(req: MedusaRequest, res: MedusaResponse, next: MedusaNextFunction) {
   const secret = req.headers["x-elavon-proxy-secret"] as string
   const expected = process.env.ELAVON_PROXY_SECRET
@@ -52,6 +81,10 @@ export default defineMiddlewares({
     {
       matcher: "/import/*",
       middlewares: [importApiKeyMiddleware],
+    },
+    {
+      matcher: "/feed/*",
+      middlewares: [productFeedAuthMiddleware],
     },
     {
       matcher: "/store/elavon/token",

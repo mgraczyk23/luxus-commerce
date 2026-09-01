@@ -106,6 +106,8 @@ services:
       ELAVON_ENV: ${ELAVON_ENV}
       ELAVON_PROXY_SECRET: ${ELAVON_PROXY_SECRET}
       BACKROOM_JWT_SECRET: ${BACKROOM_JWT_SECRET}
+      PRODUCT_FEED_USERNAME: ${PRODUCT_FEED_USERNAME}
+      PRODUCT_FEED_PASSWORD: ${PRODUCT_FEED_PASSWORD}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
