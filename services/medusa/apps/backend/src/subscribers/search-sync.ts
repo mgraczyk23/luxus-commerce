@@ -4,13 +4,25 @@ const MEILI_URL = process.env.MEILISEARCH_HOST ?? "http://meilisearch:7700"
 const MEILI_KEY = process.env.MEILISEARCH_API_KEY ?? ""
 const INDEX    = "products"
 
+// query.graph() (the Remote Query module used directly here, not the
+// Store/Admin HTTP layer) requires fully expanded dot-notation field paths —
+// the "*relation" / "+field" shorthand only exists as an HTTP-request-param
+// convenience that Medusa's REST routes expand before calling this same
+// module. Passing the shorthand directly here throws ValidationError and was
+// silently failing on every single product create/update event (caught by
+// the try/catch below, logged, swallowed) — the "products" index was never
+// receiving live updates. See src/api/feed/products.xml/route.ts's own
+// FIELDS list for the same pattern already working correctly elsewhere in
+// this codebase. Also added "collection.handle", which mapProduct() below
+// reads but which was never actually being fetched.
 const FIELDS = [
   "id", "handle", "title", "subtitle", "thumbnail",
-  "*variants", "*variants.prices",
-  "+metadata",
-  "*attribute_values", "*attribute_values.attribute_type",
-  "*categories",
-].join(",")
+  "metadata",
+  "variants.sku", "variants.manage_inventory", "variants.inventory_quantity",
+  "variants.prices.amount",
+  "attribute_values.value", "attribute_values.attribute_type.slug",
+  "collection.handle",
+]
 
 function buildAttrMap(p: any): Record<string, string[]> {
   const map: Record<string, string[]> = {}
@@ -71,7 +83,7 @@ async function upsertProduct(id: string, container: any) {
     const query = container.resolve("query")
     const { data: products } = await query.graph({
       entity: "product",
-      fields: FIELDS.split(","),
+      fields: FIELDS,
       filters: { id },
     })
     const p = products?.[0]
