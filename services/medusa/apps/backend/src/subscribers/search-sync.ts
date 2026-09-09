@@ -16,7 +16,7 @@ const INDEX    = "products"
 // this codebase. Also added "collection.handle", which mapProduct() below
 // reads but which was never actually being fetched.
 const FIELDS = [
-  "id", "handle", "title", "subtitle", "thumbnail",
+  "id", "handle", "title", "subtitle", "thumbnail", "status",
   "metadata",
   "variants.sku", "variants.manage_inventory", "variants.inventory_quantity",
   "variants.prices.amount",
@@ -27,7 +27,9 @@ const FIELDS = [
 function buildAttrMap(p: any): Record<string, string[]> {
   const map: Record<string, string[]> = {}
   for (const av of (p.attribute_values ?? [])) {
-    const slug: string | undefined = av.attribute_type?.slug
+    // A product can carry a null/undefined entry in this relation (seen live
+    // on at least one product) — guard the whole chain, not just the tail.
+    const slug: string | undefined = av?.attribute_type?.slug
     if (!slug || av.value == null) continue
     const val = String(av.value).trim()
     if (!val) continue
@@ -89,9 +91,11 @@ async function upsertProduct(id: string, container: any) {
     const p = products?.[0]
     if (!p) return
 
-    // If it's a backroom/private item, make sure it's NOT in the public index
-    // (delete it in case it was indexed while public), then stop.
-    if (isBackroomHidden(p)) {
+    // Backroom/private items and anything not yet published (drafts) must
+    // never appear in public search — mirror the storefront's own listing
+    // behavior (Medusa's /store/products only ever returns status=published).
+    // Delete rather than skip, in case it was indexed earlier while public.
+    if (isBackroomHidden(p) || p.status !== "published") {
       await deleteProduct(id)
       return
     }
