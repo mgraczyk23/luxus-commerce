@@ -14,7 +14,7 @@ Every request must include the `X-Api-Key` header. The key is stored in `.env` o
 X-Api-Key: <your-api-key>
 ```
 
-Requests without a valid key return `401 Unauthorized`.
+Requests without a valid key return `401 Unauthorized`. If the server itself has no `LUXUS_IMPORT_API_KEY` configured, every request returns `500` with `{ "message": "LUXUS_IMPORT_API_KEY is not configured on the server" }` instead — a server-side setup problem, not a caller error.
 
 ---
 
@@ -38,7 +38,7 @@ All fields are optional except `title`.
 |---|---|---|
 | `title` | string **(required)** | Product display name |
 | `subtitle` | string | Short italic tagline shown under the title on the detail page. e.g. `"Compact Government 1911 · Berryville, Arkansas"` |
-| `handle` | string | URL slug — `/product/<handle>`. Auto-generated from title if omitted. Must be unique |
+| `handle` | string | URL slug — `/product/<handle>`. Auto-generated from title if omitted. If you do supply one, it's still run through the same slug formatting (lowercased, non-alphanumeric characters collapsed to `-`) — e.g. `"NHC_Agent 01"` becomes `nhc-agent-01`, not used verbatim. Must be unique |
 | `description` | string | Long-form product description shown in the "About This Piece" section. HTML or plain text |
 | `status` | `"draft"` \| `"published"` | Defaults to `"draft"`. Set `"published"` to make the product live immediately |
 | `sku` | string | Stock-keeping unit identifier shown on the detail page |
@@ -52,7 +52,7 @@ All fields are optional except `title`.
 
 ### `highlights` — Overview tab feature boxes
 
-Array of up to **4** objects. Displayed as a responsive grid below the product description. Hidden when empty.
+Array of up to **4** objects. Displayed as a responsive grid below the product description. Hidden when empty. Submitting more than 4 is not an error — anything past the 4th is silently dropped, with no warning in the response.
 
 | Field | Type | Description |
 |---|---|---|
@@ -120,7 +120,7 @@ Free-form key/value object for spec table rows that don't fit the structured `sp
 
 > **Serial number privacy:** `serial_number` is stored server-side only. The public store endpoint explicitly excludes it. Serial numbers can be traced through manufacturer records to dealer cost — never expose them publicly.
 
-> **Metadata mirroring:** `short_description`, `engraver`, `primary_category`, and `contact_for_pricing` are written to both the `product_detail` module record and to `product.metadata`. This ensures they appear correctly on listing pages and product cards, which read from `metadata`, as well as on the detail page, which reads from the module record.
+> **Metadata mirroring:** `short_description`, `engraver`, `primary_category`, and `contact_for_pricing` are written to both the `product_detail` module record and to `product.metadata`. This ensures they appear correctly on listing pages and product cards, which read from `metadata`, as well as on the detail page, which reads from the module record. Note `contact_for_pricing` is only mirrored to `metadata` when it's `true` (written as the string `"true"`); setting it to `false` or omitting it leaves the metadata field absent either way — functionally equivalent, but not a literal `"false"` value if you're inspecting raw metadata.
 
 ---
 
@@ -194,8 +194,8 @@ All fields in this block are strictly internal. They are never returned by any p
 
 Key/value pairs where the key is an attribute type **slug** and the value is a string or array of strings. These power the listing page filters AND auto-populate the top rows of the Specifications tab.
 
-- **Multi-select types** (brand, caliber): pass a single string or an array
-- **Single-select types** (action, barrel-length, frame-color, magazine-capacity, model): pass a single string
+- Every attribute type currently configured in this store — brand, model, caliber, action, barrel-length, magazine-capacity, frame-color — is **multi-select**: pass a single string or an array for any of them. The storefront fully supports multiple values everywhere (filters render as checkboxes, and the spec table/product cards join multiple values with " / ", e.g. `"9mm / .40 S&W"`) — verified directly against the live database and storefront rendering code, not just an assumption.
+- An attribute type *could* be switched to single-select in the future via Medusa Admin → `/app/product-attributes` (there's an `is_multi_select` toggle per type). If that's ever done for a type, the import API will enforce it: sending an array with more than one value for a single-select type keeps only the first value and returns a warning rather than failing the import.
 - Unknown slugs or values produce a warning in the response but do not fail the import
 - Values are matched **case-insensitively** — `".45 acp"` matches `".45 ACP"`
 
@@ -204,12 +204,12 @@ Key/value pairs where the key is an attribute type **slug** and the value is a s
 | Slug | Select type | Filter label | Spec table label |
 |---|---|---|---|
 | `brand` | Multi-select | Brand | Brand |
-| `model` | Single-select | Model | Model |
+| `model` | Multi-select | Model | Model |
 | `caliber` | Multi-select | Caliber | Caliber |
-| `action` | Single-select | Action | Action |
-| `barrel-length` | Single-select | Barrel Length | Barrel Length |
-| `magazine-capacity` | Single-select | Magazine Capacity | Magazine Capacity |
-| `frame-color` | Single-select | Frame Color | Frame Color |
+| `action` | Multi-select | Action | Action |
+| `barrel-length` | Multi-select | Barrel Length | Barrel Length |
+| `magazine-capacity` | Multi-select | Magazine Capacity | Magazine Capacity |
+| `frame-color` | Multi-select | Frame Color | Frame Color |
 
 > **Values are managed in the admin, not hardcoded here.** Go to `/app/product-attributes` in the Medusa admin to see current values, add new ones, or add new attribute types. New brands, calibers, models, etc. must be added there before they can be referenced in an import.
 
@@ -275,16 +275,18 @@ Products are not automatically assigned to "Collectibles Firearms" or "Modern Fi
     {
       "title": "Bad Product",
       "success": false,
-      "error": "Title is required"
+      "error": "duplicate key value violates unique constraint \"product_handle_unique\""
     }
   ]
 }
 ```
 
 - **HTTP 201** when at least one product was created
-- **HTTP 400** when all products failed or the body is empty
+- **HTTP 400** when all products in the request failed, or when the body is a literal empty array `[]`
+- **HTTP 500** (raw framework error, not the `results[]` shape above) if the server-side lookup of existing attribute types/values/categories/collections fails before any item is processed — rare, but possible on a database hiccup
 - Bulk imports process each item independently — one failure does not stop the rest
 - Warnings (unknown attribute values, unknown category/collection handles) are reported per item but do not fail the import
+- Per-item `error` text is whatever the underlying database/framework error message says (e.g. a duplicate-handle constraint violation) — there's no fixed catalog of error strings to match against in your own code
 
 ---
 
@@ -707,6 +709,8 @@ Images are matched to products by SKU automatically. Products with no matching i
 ## Notes and Gotchas
 
 **Handles must be unique.** If you import the same title twice without an explicit `handle`, the second import fails with a duplicate handle error. Always set an explicit `handle` for programmatic imports.
+
+**SKUs should be unique too, though it isn't separately validated.** There's no dedicated SKU-uniqueness check in the import code — a duplicate SKU is only caught if/when the underlying database constraint rejects it, which fails just that one item (same as a duplicate handle) but with a raw database error message rather than a friendly one.
 
 **Prices are in dollars, stored in cents.** Pass `3499.00` for a $3,499 item.
 

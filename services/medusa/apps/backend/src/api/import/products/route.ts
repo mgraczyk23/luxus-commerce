@@ -93,22 +93,30 @@ async function importOne(
     attrService: any
     link: any
     attrLookup: Record<string, Record<string, string>> // typeSlug -> { valueLower -> valueId }
+    attrMultiSelect: Record<string, boolean>            // typeSlug -> is_multi_select
     categoryHandleToId: Record<string, string>
     collectionHandleToId: Record<string, string>
   }
 ): Promise<ImportResult> {
   const {
     productService, pricingService, detailsService, specsService,
-    inventoryService, attrService, link, attrLookup,
+    inventoryService, attrService, link, attrLookup, attrMultiSelect,
     categoryHandleToId, collectionHandleToId,
   } = deps
 
   try {
+    const warnings: string[] = []
+
     // Build metadata — storefront mapper reads these fields from product.metadata,
     // so anything displayed on listing pages or cards must be here as well as
     // in the custom module tables.
     const metadata: Record<string, any> = {}
-    if (item.highlights?.length) metadata.highlights = item.highlights.slice(0, 4)
+    if (item.highlights?.length) {
+      metadata.highlights = item.highlights.slice(0, 4)
+      if (item.highlights.length > 4) {
+        warnings.push(`${item.highlights.length} highlights submitted — only the first 4 were kept`)
+      }
+    }
     if (item.in_the_box?.length) metadata.in_the_box = item.in_the_box
     if (item.extra_specs && Object.keys(item.extra_specs).length)
       metadata.extra_specs = item.extra_specs
@@ -240,8 +248,6 @@ async function importOne(
     await Promise.all(customOps)
 
     // 5. Resolve and link attribute values
-    const warnings: string[] = []
-
     if (item.categories?.length) {
       const unknown = item.categories.filter((h) => !categoryHandleToId[h])
       for (const h of unknown) warnings.push(`Unknown category handle: "${h}"`)
@@ -261,7 +267,13 @@ async function importOne(
           continue
         }
 
-        const targets = Array.isArray(rawValues) ? rawValues : [rawValues]
+        let targets = Array.isArray(rawValues) ? rawValues : [rawValues]
+        if (!attrMultiSelect[typeSlug] && targets.length > 1) {
+          warnings.push(
+            `Type "${typeSlug}" is single-select but ${targets.length} values were submitted — only "${targets[0]}" was used`
+          )
+          targets = [targets[0]]
+        }
         for (const v of targets) {
           const id = valueMap[v.toLowerCase()]
           if (!id) {
@@ -320,8 +332,10 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   ])
 
   const attrLookup: Record<string, Record<string, string>> = {}
+  const attrMultiSelect: Record<string, boolean> = {}
   for (const type of allTypes as any[]) {
     attrLookup[type.slug] = {}
+    attrMultiSelect[type.slug] = type.is_multi_select
     for (const v of allValues as any[]) {
       if (v.attribute_type_id === type.id) {
         attrLookup[type.slug][v.value.toLowerCase()] = v.id
@@ -339,7 +353,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   const deps = {
     productService, pricingService, detailsService, specsService,
-    inventoryService, attrService, link, attrLookup,
+    inventoryService, attrService, link, attrLookup, attrMultiSelect,
     categoryHandleToId, collectionHandleToId,
   }
 
