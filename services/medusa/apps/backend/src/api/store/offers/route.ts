@@ -48,6 +48,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   try {
     const salesEmail = process.env.SALES_EMAIL ?? "sales@luxus-collection.com"
     const adminUrl   = process.env.ADMIN_URL ?? "https://api.luxus-collection.com"
+    const storefrontUrl = process.env.STOREFRONT_URL ?? "https://luxus-collection.com"
     const { subject, html } = newOfferAdminEmail({
       productTitle:  product_title,
       productHandle: product_handle,
@@ -58,6 +59,7 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
       listedPrice:   null,
       message:       message ?? null,
       adminUrl,
+      storefrontUrl,
       productId:     product_id,
     })
     await sendEmail({ to: salesEmail, subject, html, replyTo: email })

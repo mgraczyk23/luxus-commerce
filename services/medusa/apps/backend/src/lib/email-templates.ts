@@ -92,6 +92,7 @@ export type NewOfferData = {
   listedPrice:   number | null
   message:       string | null
   adminUrl:      string
+  storefrontUrl: string
   productId:     string
 }
 
@@ -114,7 +115,8 @@ export function newOfferAdminEmail(d: NewOfferData): { subject: string; html: st
       <p style="margin:0 0 8px;font-size:9px;letter-spacing:0.18em;text-transform:uppercase;color:#707076;">Buyer Message</p>
       <div style="background:#fafafa;border:1px solid #e4e4e6;padding:14px 16px;margin-bottom:24px;font-size:13px;color:#525258;line-height:1.7;">${d.message}</div>
     ` : ""}
-    ${cta("Review Offer in Admin", `${d.adminUrl}/products/${d.productId}`)}
+    ${cta("View Product on Site", `${d.storefrontUrl}/product/${d.productHandle}`)}
+    <p style="margin:18px 0 0;font-size:11px;color:#707076;">Respond to this offer in <a href="${d.adminUrl}/app/offers" style="color:#7e5e10;">Admin &rarr; Offers</a>.</p>
   `
 
   return {

@@ -115,7 +115,9 @@ function OfferRow({
         <div className="flex flex-col gap-0.5 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <a
-              href={`/app/products/${offer.product_id}`}
+              href={`https://luxus-collection.com/product/${offer.product_handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className="font-medium text-ui-fg-base hover:text-ui-fg-interactive truncate"
             >
               {offer.product_title}
