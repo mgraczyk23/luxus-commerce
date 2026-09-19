@@ -36,6 +36,12 @@ export async function PATCH(req: MedusaRequest, res: MedusaResponse) {
     return res.status(422).json({ error: "counter_amount is required when status is countered" })
   }
 
+  // The counter email's accept link is signed with this secret; without it the
+  // link would be signed with an empty key (forgeable) and could never be accepted.
+  if (status === "countered" && !process.env.OFFER_TOKEN_SECRET) {
+    return res.status(500).json({ error: "OFFER_TOKEN_SECRET is not configured on the server; counter offers are disabled" })
+  }
+
   const updates: Record<string, any> = {}
   if (status         != null) updates.status         = status
   if (counter_amount != null) updates.counter_amount = counter_amount

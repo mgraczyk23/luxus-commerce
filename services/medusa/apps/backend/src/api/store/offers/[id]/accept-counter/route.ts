@@ -26,7 +26,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
 
   if (auth_sig && secret) {
     const expected = crypto.createHmac("sha256", secret).update(id).digest("hex")
-    authorized = crypto.timingSafeEqual(Buffer.from(auth_sig), Buffer.from(expected))
+    // timingSafeEqual throws (→ 500) on unequal lengths, so a malformed sig must be checked first
+    authorized = auth_sig.length === expected.length &&
+      crypto.timingSafeEqual(Buffer.from(auth_sig), Buffer.from(expected))
   }
 
   if (!authorized && actorId && actorType === "customer") {
