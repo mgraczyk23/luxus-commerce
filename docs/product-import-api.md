@@ -706,6 +706,30 @@ Images are matched to products by SKU automatically. Products with no matching i
 
 ---
 
+## Bulk Import Script (type, tag, sales channel, inventory, images)
+
+The `/import/products` API creates the product only. It does **not** set the product type, tags, sales channel, shipping profile, inventory, or copy images into our own S3 bucket (the storefront only allows images from our own hosts, so manufacturer-hosted image URLs show as broken). For a batch of new firearms use the script instead: `services/medusa/apps/backend/src/scripts/import-products.ts`. It takes the same JSON shape as the API and, for every product:
+
+- creates it as **draft** with product type `Firearm` and tag `Modern Firearms`
+- attaches **only** the `Web Site` sales channel, plus the default shipping profile
+- marks it **contact for pricing** (no price is set)
+- downloads each image and re-uploads it to S3 (blocked/broken image links are skipped and reported; the first usable image becomes the thumbnail)
+- creates an inventory item (title = SKU) with stock `1` at the `Luxus Collection` location
+- links attributes, auto-creating values that do not exist yet after applying the alias table at the top of the script (near-duplicates such as `HK` -> `Heckler & Koch`, `5.56mm` -> `5.56 NATO`, category `shotguns` -> `shotgun`). **Review that alias table for every new file** — otherwise near-duplicate values get created and split the storefront filters.
+
+Run inside the backend container. It defaults to a **dry run** (no writes or uploads):
+
+```bash
+docker cp items.json luxus-medusa:/tmp/import_items.json
+docker compose exec medusa sh -c "npx medusa exec ./src/scripts/import-products.ts"                       # dry run, prints new attribute values it would create
+docker compose exec -e DRY_RUN=false -e LIMIT=3 medusa sh -c "npx medusa exec ./src/scripts/import-products.ts"   # small pilot
+docker compose exec -d -e DRY_RUN=false medusa sh -c "npx medusa exec ./src/scripts/import-products.ts > /tmp/import.log 2>&1"   # full run in background
+```
+
+It is safe to re-run: products whose handle or SKU already exist are skipped, and if a step fails partway the half-built product is removed. Do not restart the backend container while it runs. Results are written to `/tmp/import_results.json` in the container. Optional env vars: `ONLY_SKUS=A,B`, `LIMIT`, `STOCK_QTY`, `TYPE_VALUE`, `TAG_VALUE`, `CHANNEL_NAME`, `LOCATION_NAME`, `IMPORT_JSON`.
+
+---
+
 ## Notes and Gotchas
 
 **Handles must be unique.** If you import the same title twice without an explicit `handle`, the second import fails with a duplicate handle error. Always set an explicit `handle` for programmatic imports.

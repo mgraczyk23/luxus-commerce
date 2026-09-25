@@ -151,7 +151,7 @@ async function importOne(
       thumbnail: item.thumbnail,
       images: item.images?.map((url) => ({ url })),
       ...(Object.keys(metadata).length ? { metadata } : {}),
-      ...(categoryIds.length ? { categories: categoryIds } : {}),
+      ...(categoryIds.length ? { category_ids: categoryIds.map((c) => c.id) } : {}),
       ...(collectionId ? { collection_id: collectionId } : {}),
       options: [{ title: "Title", values: ["Default"] }],
     }])
@@ -327,8 +327,9 @@ export async function POST(req: MedusaRequest, res: MedusaResponse) {
   const [allTypes, allValues, allCategories, allCollections] = await Promise.all([
     attrService.listAttributeTypes({}, { take: 1000 }),
     attrService.listAttributeValues({}, { take: 1000 }),
-    productService.listProductCategories({}, { take: 1000 }),
-    productService.listProductCollections({}, { take: 1000 }),
+    // `select` is required: without it these lists return only `id`, so every handle lookup below misses
+    productService.listProductCategories({}, { take: 1000, select: ["id", "handle"] }),
+    productService.listProductCollections({}, { take: 1000, select: ["id", "handle"] }),
   ])
 
   const attrLookup: Record<string, Record<string, string>> = {}
