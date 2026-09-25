@@ -117,6 +117,7 @@ export default async function run({ container }: { container: any }) {
   const warnings: string[] = []
   const results: any[] = []
 
+  let verified = false
   async function mirror(url: string, name: string): Promise<string | null> {
     if (cache[url]) return cache[url]
     try {
@@ -125,11 +126,21 @@ export default async function run({ container }: { container: any }) {
       if (!res.ok || !EXT[ctype]) return null
       const buf = Buffer.from(await res.arrayBuffer())
       if (!buf.length || buf.length > 8_000_000) return null
-      const out = await fileService.createFiles({ filename: `${name}.${EXT[ctype]}`, mimeType: ctype, content: buf.toString("binary"), access: "public" })
+      // The S3 provider decodes `content` as BASE64 (anything else is written as utf8 and the image is corrupted).
+      const out = await fileService.createFiles({ filename: `${name}.${EXT[ctype]}`, mimeType: ctype, content: buf.toString("base64"), access: "public" })
       const file = Array.isArray(out) ? out[0] : out
+      if (!verified) {
+        // Once per run: read the upload back and require identical bytes, so an encoding bug can never ship silently.
+        const back = Buffer.from(await (await fetch(file.url)).arrayBuffer())
+        if (!back.equals(buf)) throw new Error(`Uploaded image does not match source bytes (${file.url}) — aborting`)
+        verified = true
+      }
       cache[url] = file.url
       return file.url
-    } catch { return null }
+    } catch (e: any) {
+      if (String(e?.message).includes("does not match source bytes")) throw e
+      return null
+    }
   }
 
   async function resolveAttr(slug: string, raw: string | string[]): Promise<string[]> {
